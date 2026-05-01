@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   --color-naranja: #F97316;
   --color-naranja-hover: #EA580C;
   --color-naranja-light: #FFF7ED;
@@ -14,6 +14,7 @@
 }
 
 body {
+  margin: 0;
   background-color: var(--color-crema);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -25,31 +26,30 @@ body {
   min-height: 100dvh;
 }
 
-@utility pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-}
+.bg-crema { background-color: var(--color-crema); }
+.bg-naranja { background-color: var(--color-naranja); }
+.text-naranja { color: var(--color-naranja); }
+.border-naranja { border-color: var(--color-naranja); }
 
-@utility pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-@utility line-clamp-2 {
+.line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* Hide scrollbar */
 .overflow-x-auto {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .overflow-x-auto::-webkit-scrollbar {
   display: none;
 }
 
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -65,24 +65,13 @@ body {
   50% { transform: translateY(-8px); }
 }
 
-@utility animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@utility animate-slideUp {
-  animation: slideUp 0.4s ease-out;
-}
-
-@utility animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
   20%, 40%, 60%, 80% { transform: translateX(4px); }
 }
 
-@utility animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+.animate-slideUp { animation: slideUp 0.4s ease-out; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-shake { animation: shake 0.5s ease-in-out; }
