@@ -1,3 +1,4 @@
+import React from "react";
 export default function CookieLogo({ size = 32, className = '' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" className={className}>
