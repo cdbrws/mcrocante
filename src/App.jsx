@@ -7,6 +7,7 @@ import GuardadosScreen from './components/GuardadosScreen';
 import EmpreendedoresScreen from './components/EmpreendedoresScreen';
 import AdminScreen from './components/AdminScreen';
 import BottomNav from './components/BottomNav';
+import React from "react";
 
 const HOME_PROMPTS = {
   sinmango: "No tengo un mango, busco planes gratis",
