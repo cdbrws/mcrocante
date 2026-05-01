@@ -4,29 +4,31 @@ import iPhoneMockup from './iPhoneMockup';
 import EntrepreneurCard from './EntrepreneurCard';
 
 const ALL_CATEGORIES = [
-  { id: 'sinmango', emoji: '🆓', label: 'Planes gratis' },
-  { id: 'comer', emoji: '🍔', label: 'Comer rico' },
-  { id: 'chicos', emoji: '🎈', label: 'Con los pibes' },
-  { id: 'eventos', emoji: '🎉', label: 'Quiero salir' },
-  { id: 'cerca', emoji: '📍', label: 'Cerca mio' },
-  { id: 'pareja', emoji: '💑', label: 'En pareja' },
-  { id: 'noche', emoji: '🌙', label: 'Salir de noche' },
-  { id: 'aire', emoji: '🏔️', label: 'Aire libre' },
-  { id: 'lluvia', emoji: '🌧️', label: 'Llueve' },
-  { id: 'fiaca', emoji: '🛋️', label: 'Alta fiaca' },
-  { id: 'musica', emoji: '🎸', label: 'Musica' },
-  { id: 'peli', emoji: '🎬', label: 'Ver peli' },
+  { id: 'sinmango', label: 'Planes gratis' },
+  { id: 'comer', label: 'Comer rico' },
+  { id: 'chicos', label: 'Con los pibes' },
+  { id: 'eventos', label: 'Quiero salir' },
+  { id: 'cerca', label: 'Cerca mio' },
+  { id: 'pareja', label: 'En pareja' },
+  { id: 'noche', label: 'Salir de noche' },
+  { id: 'aire', label: 'Aire libre' },
+  { id: 'lluvia', label: 'Llueve' },
+  { id: 'fiaca', label: 'Alta fiaca' },
+  { id: 'musica', label: 'Musica' },
+  { id: 'peli', label: 'Ver peli' },
 ];
 
 const QUICK_CHIPS = [
-  { label: '😴 Estoy aburrido', key: 'ideas', color: 'bg-orange-100 text-orange-700' },
-  { label: '🆓 No tengo un mango', key: 'sinmango', color: 'bg-naranja text-white shadow-md scale-[1.05]' },
-  { label: '🍝 Comer barato', key: 'comer', color: 'bg-yellow-100 text-yellow-700' },
-  { label: '🏠 Algo en casa', key: 'fiaca', color: 'bg-purple-100 text-purple-700' },
-  { label: '🚶 Quiero moverme', key: 'aire', color: 'bg-emerald-100 text-emerald-700' },
-  { label: '👥 Plan con amigos', key: 'chicos', color: 'bg-rose-100 text-rose-700' },
-  { label: '🧉 Estoy de visita', key: 'cerca', color: 'bg-indigo-100 text-indigo-700' },
-  { label: '🎲 Sorprendeme', key: 'start', color: 'bg-pink-100 text-pink-700' },
+  { label: 'No tengo un mango', key: 'sinmango' },
+  { label: 'Estoy aburrido', key: 'ideas' },
+  { label: 'Comer barato', key: 'comer' },
+  { label: 'Algo en casa', key: 'fiaca' },
+  { label: 'Quiero moverme', key: 'aire' },
+  { label: 'Plan con amigos', key: 'chicos' },
+  { label: 'Estoy de visita', key: 'cerca' },
+  { label: 'Sorprendeme', key: 'start' },
+  { label: 'Plan en pareja', key: 'pareja' },
+  { label: 'Algo tranqui', key: 'peli' },
 ];
 
 function shuffleArray(arr) {
@@ -47,13 +49,14 @@ export default function HomeScreen({
   onEmprendedores,
 }) {
   const [categories] = useState(() => shuffleArray(ALL_CATEGORIES).slice(0, 8));
+  const [quickChips] = useState(() => shuffleArray(QUICK_CHIPS).slice(0, 5));
 
   return (
     <div className="flex flex-col">
       {/* HERO */}
       <div className="relative bg-gradient-to-br from-crema via-white to-naranja-light overflow-hidden">
-        <div className="px-5 pt-8 pb-6">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="px-5 pt-8 pb-4">
+          <div className="flex items-center gap-3 mb-5">
             <div className="relative">
               <CookieLogo size={44} />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
@@ -63,11 +66,8 @@ export default function HomeScreen({
               <h1 className="text-2xl font-extrabold text-stone-800 tracking-tight">
                 Modo Crocante
               </h1>
-              <p className="text-xs text-stone-400 font-medium">
-                Tu guia local de San Luis
-              </p>
-              <div className="text-xs text-stone-500 uppercase tracking-wide mt-1">
-                AIA PUNTANA
+              <div className="text-xs text-stone-500 uppercase tracking-wide mt-1 font-bold">
+                AIA 100% Puntana!
               </div>
             </div>
           </div>
@@ -82,23 +82,24 @@ export default function HomeScreen({
           </div>
         </div>
 
+        {/* IPHONE MOCKUP */}
+        <div className="flex justify-center mt-2 -mb-3">
+          <iPhoneMockup />
+        </div>
+
         {/* CHIPS RAPIDOS */}
-        <div className="px-5 mt-6 mb-6">
-          <div className="flex flex-wrap gap-3">
-            {QUICK_CHIPS.map((item, index) => (
+        <div className="px-5 mt-5 mb-6">
+          <div className="flex flex-wrap gap-2">
+            {quickChips.map((item, index) => (
               <button
                 key={index}
                 onClick={() => onCategory(item.key)}
-                className={`${item.color} px-4 py-3 rounded-full text-sm font-bold shadow-sm active:scale-[0.96] transition-all`}
+                className="bg-white/70 border border-white/80 backdrop-blur-md px-3 py-2 rounded-full text-xs font-bold text-stone-700 shadow-sm active:scale-[0.96] transition-all"
               >
                 {item.label}
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="flex justify-center -mt-2 -mb-4">
-          <iPhoneMockup />
         </div>
       </div>
 
@@ -144,7 +145,6 @@ export default function HomeScreen({
               onClick={() => onCategory(cat.id)}
               className="bg-white rounded-full px-4 py-2.5 flex items-center gap-2 shadow-sm active:scale-[0.95] transition-all border border-stone-100"
             >
-              <span className="text-lg">{cat.emoji}</span>
               <span className="text-[12px] font-bold text-stone-700">
                 {cat.label}
               </span>
@@ -153,16 +153,16 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* EMPRENDEDORES */}
+      {/* QUE HAY EN SAN LUIS */}
       {emprendedores.length > 0 && (
         <div className="px-5 mt-6 mb-8">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-naranja/10 rounded-lg flex items-center justify-center text-sm">
-                🏪
+                📍
               </div>
               <h3 className="text-base font-extrabold text-stone-800">
-                Emprendimientos
+                Que hay en San Luis?
               </h3>
             </div>
 
