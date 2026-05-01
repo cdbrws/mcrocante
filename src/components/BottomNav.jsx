@@ -1,3 +1,4 @@
+import React from "react";
 import CookieLogo from './CookieLogo';
 
 const NAV_ITEMS = [
