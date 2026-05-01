@@ -57,22 +57,29 @@ export default function HomeScreen({ onCategory, crocante, emprendedores, onEmpr
         </div>
 
         {/* Ejemplos - tarjetas rápidas para empezar (rotativas) */}
-        <div className="px-5 mt-6 mb-6">
-          <div className="text-sm text-stone-600 mb-2">Ejemplos</div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              {title: "Caminar por miradores", subtitle: "Vistas de la ciudad", icon:"👀"},
-              {title: "Feria o plaza", subtitle: "Paseo corto con comida simple", icon:"🪴"},
-              {title: "Recorrido por el centro", subtitle: "Tiendas y plazas", icon:"🏙️"},
-              {title: "Actividad al aire libre", subtitle: "Parque o lago cercano", icon:"🌳"},
-              {title: "Plan corto gratis", subtitle: "Sin gastar", icon:"🎉"}
-            ].sort(() => Math.random() - 0.5).slice(0,4).map((ex, idx) => (
-              <div key={idx} className="bg-white rounded-2xl p-3 shadow-sm border border-stone-100 cursor-pointer animate-bounce" onClick={() => onCategory('start')}>
-                <div className="flex items-center gap-2 mb-1 text-sm font-semibold text-stone-800">
-                  <span>{ex.icon}</span> {ex.title}
-                </div>
-                <div className="text-xs text-stone-500">{ex.subtitle}</div>
-              </div>
+    {/* CHIPS RAPIDOS */}
+<div className="px-5 mt-6 mb-6">
+  <div className="flex flex-wrap gap-3">
+    {[
+      { label: "😴 Estoy aburrido", key: "ideas", color: "bg-orange-100 text-orange-700" },
+      { label: "🆓 No tengo un mango", key: "sinmango", color: "bg-green-100 text-green-700" },
+      { label: "🍝 Quiero comer barato", key: "comer", color: "bg-yellow-100 text-yellow-700" },
+      { label: "🏠 Algo en casa", key: "fiaca", color: "bg-purple-100 text-purple-700" },
+      { label: "🚶 Quiero moverme", key: "aire", color: "bg-emerald-100 text-emerald-700" },
+      { label: "👥 Plan con amigos", key: "chicos", color: "bg-rose-100 text-rose-700" },
+      { label: "🧉 Estoy de visita", key: "cerca", color: "bg-indigo-100 text-indigo-700" },
+      { label: "🎲 Sorprendeme", key: "ideas", color: "bg-pink-100 text-pink-700" },
+    ].map((item, i) => (
+      <button
+        key={i}
+        onClick={() => onCategory(item.key)}
+        className={`${item.color} px-4 py-3 rounded-full text-sm font-bold shadow-sm active:scale-[0.96] transition-all`}
+      >
+        {item.label}
+      </button>
+    ))}
+  </div>
+</div>
             ))}
           </div>
         </div>
