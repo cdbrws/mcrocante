@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from 'react';
 import CookieLogo from './CookieLogo';
 import AdminPanel from './AdminPanel';
