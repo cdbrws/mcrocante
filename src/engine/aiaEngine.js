@@ -2,6 +2,7 @@ import { DATA, CROCANTE_DEL_DIA, EMPRENDEDORES } from '../data/places';
 import { LOCALIDADES_SL } from '../data/localidades';
 import { RECETAS } from '../data/recetas';
 import { PELICULAS, BANDAS, PLANCHILL, ACTIVIDADES_LLUVIA, ACTIVIDADES_NOCHE, ACTIVIDADES_PAREJA } from '../data/aiaData';
+import { SUGGESTIONS, getRandomSuggestions } from '../data/suggestions';
 
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function normalize(text) { return text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
@@ -338,8 +339,29 @@ export function processMessage(text, weather) {
     return { text: t, results: items, suggestions: INTENTS[intentKey].suggestions, intent: intentKey };
   }
 
-  const fb = pickRandom(FALLBACKS);
-  return { text: fb.text, results: shuffle(DATA).slice(0, 3), suggestions: fb.suggestions, intent: null };
+  // Fallback: uso de sugerencias locales cuando no hay coincidencias
+  const picks = getRandomSuggestions({ limit: 5 });
+  const lines = picks.map((s, idx) => `${idx + 1}. ${s.title} — ${s.description}`).join('\n');
+  const mapped = picks.map(s => ({
+    id: s.id,
+    nombre: s.title,
+    desc: s.description,
+    zona: s.location,
+    categorias: [],
+    precio: 0,
+    tags: s.tags
+  }));
+  const text = `Te tiro algunas ideas crocantes:\n${lines}`;
+  return {
+    text,
+    results: mapped,
+    suggestions: picks.map(p => p.title),
+    rotatingSuggestions: getRotatingSuggestions(),
+    intent: null,
+    followUp: null,
+    askLocality: false,
+    localityPrompt: null
+  };
 }
 
 export function getCrocanteDelDia() {
