@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import CookieLogo from './CookieLogo';
 import AiaIcon from './AiaIcon';
 import iPhoneMockup from './iPhoneMockup';
