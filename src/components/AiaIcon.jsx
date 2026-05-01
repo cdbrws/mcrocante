@@ -1,3 +1,4 @@
+import React from "react";
 export default function AiaIcon({ size = 24, className = '' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className}>
