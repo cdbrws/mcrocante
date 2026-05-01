@@ -1,3 +1,4 @@
+import React from "react";
 export default function PlaceCard({ item, saved, onToggleSave, compact }) {
   return (
     <div className={`bg-white rounded-2xl shadow-sm border border-stone-100 ${compact ? 'p-3' : 'p-4'}`}>
