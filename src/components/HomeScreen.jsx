@@ -7,14 +7,14 @@ import EntrepreneurCard from './EntrepreneurCard';
 const ALL_CATEGORIES = [
   { id: 'sinmango', emoji: '🆓', label: 'Planes gratis', msg: 'No tengo un mango, busco planes gratis' },
   { id: 'comer', emoji: '🍔', label: 'Comer rico', msg: 'Quiero comer algo rico' },
-  { id: 'chicos', emoji: '🎈', label: 'Con los pibes', msg: 'Busco planes para hacer con los pibes' },
+  { id: 'chicos', emoji: '🎈', label: 'Con amigos/as', msg: 'Busco planes para ir con amigos/as' },
   { id: 'eventos', emoji: '🎉', label: 'Quiero salir', msg: 'Quiero salir, que hay hoy?' },
   { id: 'cerca', emoji: '📍', label: 'Cerca mio', msg: 'Quiero opciones cerca mio' },
   { id: 'pareja', emoji: '💑', label: 'En pareja', msg: 'Busco un plan para ir en pareja' },
   { id: 'noche', emoji: '🌙', label: 'Salir de noche', msg: 'Que hay para hacer de noche?' },
   { id: 'aire', emoji: '🏔️', label: 'Aire libre', msg: 'Quiero algo en aire libre' },
   { id: 'lluvia', emoji: '🌧️', label: 'Llueve', msg: 'Esta lloviendo, que puedo hacer?' },
-  { id: 'fiaca', emoji: '🛋️', label: 'Alta fiaca', msg: 'Alta fiaca de moverme, que hago?' },
+  { id: 'fiaca', emoji: '🛋️', label: 'Alta fiaca', msg: 'Alta fiaca de moverme, que hacemos?' },
   { id: 'musica', emoji: '🎸', label: 'Musica', msg: 'Recomendame musica para escuchar' },
   { id: 'peli', emoji: '🎬', label: 'Ver peli', msg: 'Recomendame una peli para ver' },
 ];
@@ -43,8 +43,8 @@ export default function HomeScreen({ onCategory, crocante, emprendedores, onEmpr
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-stone-800 tracking-tight">Modo Crocante</h1>
-              <p className="text-xs text-stone-400 font-medium">Tu guia local de San Luis</p>
-              <div className="text-xs text-stone-500 uppercase tracking-wide mt-1">AIA PUNTANA</div>
+              
+              <div className="text-xs text-stone-500 uppercase tracking-wide mt-1">AIA 100% PUNTANA</div>
             </div>
           </div>
 
@@ -52,7 +52,7 @@ export default function HomeScreen({ onCategory, crocante, emprendedores, onEmpr
           <div className="mb-2" />
 
         <div className="flex justify-center mt-2">
-          <button onClick={() => onCategory('start')} className="bg-naranja text-white font-bold px-6 py-3 rounded-full shadow-md">Iniciar Conversación</button>
+          <button onClick={() => onCategory('start')} className="bg-naranja text-white font-bold px-6 py-3 rounded-full shadow-md">Iniciar Chat</button>
         </div>
         </div>
 
@@ -66,7 +66,7 @@ export default function HomeScreen({ onCategory, crocante, emprendedores, onEmpr
       { label: "🍝 Quiero comer barato", key: "comer", color: "bg-yellow-100 text-yellow-700" },
       { label: "🏠 Algo en casa", key: "fiaca", color: "bg-purple-100 text-purple-700" },
       { label: "🚶 Quiero moverme", key: "aire", color: "bg-emerald-100 text-emerald-700" },
-      { label: "👥 Plan con amigos", key: "chicos", color: "bg-rose-100 text-rose-700" },
+      { label: "👥 Plan con amigos/as", key: "chicos", color: "bg-rose-100 text-rose-700" },
       { label: "🧉 Estoy de visita", key: "cerca", color: "bg-indigo-100 text-indigo-700" },
       { label: "🎲 Sorprendeme", key: "ideas", color: "bg-pink-100 text-pink-700" },
     ].map((item, i) => (
@@ -111,7 +111,7 @@ export default function HomeScreen({ onCategory, crocante, emprendedores, onEmpr
 
       {/* CATEGORIAS FLOTANTES */}
       <div className="px-5 mt-8">
-        <h3 className="text-base font-extrabold text-stone-800 mb-3">Que queres hacer?</h3>
+        <h3 className="text-base font-extrabold text-stone-800 mb-3">Andamos crocanes? Yo te ayudo!</h3>
         <div className="flex flex-wrap gap-2">
           {categories.map(cat => (
             <button
@@ -132,7 +132,7 @@ export default function HomeScreen({ onCategory, crocante, emprendedores, onEmpr
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-naranja/10 rounded-lg flex items-center justify-center text-sm">🏪</div>
-              <h3 className="text-base font-extrabold text-stone-800">Emprendimientos</h3>
+              <h3 className="text-base font-extrabold text-stone-800">Auspicia esta app crocante..</h3>
             </div>
             <button onClick={onEmprendedores} className="text-xs font-semibold text-naranja">Ver todos →</button>
           </div>
