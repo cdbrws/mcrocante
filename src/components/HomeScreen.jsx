@@ -77,7 +77,7 @@ export default function HomeScreen({
               onClick={() => onCategory('start')}
               className="bg-naranja text-white font-bold px-6 py-3 rounded-full shadow-md active:scale-[0.96] transition-all"
             >
-              Iniciar Conversación
+              Iniciar chat
             </button>
           </div>
         </div>
@@ -89,16 +89,26 @@ export default function HomeScreen({
 
         {/* CHIPS RAPIDOS */}
         <div className="px-5 mt-5 mb-6">
-          <div className="flex flex-wrap gap-2">
-            {quickChips.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => onCategory(item.key)}
-                className="bg-white/70 border border-white/80 backdrop-blur-md px-3 py-2 rounded-full text-xs font-bold text-stone-700 shadow-sm active:scale-[0.96] transition-all"
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="relative min-h-[86px]">
+            {quickChips.map((item, index) => {
+              const styles = [
+                'left-0 top-0 bg-orange-100/80 text-orange-700 border-orange-200 rotate-[-3deg]',
+                'left-[118px] top-1 bg-emerald-100/80 text-emerald-700 border-emerald-200 rotate-[2deg]',
+                'left-[35px] top-[38px] bg-purple-100/80 text-purple-700 border-purple-200 rotate-[1deg]',
+                'left-[165px] top-[42px] bg-rose-100/80 text-rose-700 border-rose-200 rotate-[-2deg]',
+                'left-[78px] top-[72px] bg-yellow-100/80 text-yellow-700 border-yellow-200 rotate-[2deg]',
+              ];
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => onCategory(item.key)}
+                  className={`absolute ${styles[index]} border backdrop-blur-md px-2.5 py-1.5 rounded-full text-[10px] font-extrabold shadow-sm active:scale-[0.92] transition-all animate-float`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
