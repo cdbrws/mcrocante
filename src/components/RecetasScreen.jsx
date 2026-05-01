@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from 'react';
 import { RECETAS, getRecetasByEtiqueta } from '../data/recetas';
 import RecipeCard from './RecipeCard';
