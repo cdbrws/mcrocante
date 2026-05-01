@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from 'react';
 import { DATA } from '../data/places';
 import PlaceCard from './PlaceCard';
