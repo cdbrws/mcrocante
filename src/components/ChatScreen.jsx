@@ -1,4 +1,3 @@
-import React from "react";
 import { useState, useRef, useEffect } from 'react';
 import { processMessage } from '../engine/aiaEngine';
 import { getClima } from '../utils/clima';
