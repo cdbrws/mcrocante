@@ -1,3 +1,4 @@
+import React from "react";
 import { DATA } from '../data/places';
 import PlaceCard from './PlaceCard';
 import CookieLogo from './CookieLogo';
