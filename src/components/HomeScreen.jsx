@@ -4,22 +4,22 @@ import iPhoneMockup from './iPhoneMockup';
 import EntrepreneurCard from './EntrepreneurCard';
 
 const ALL_CATEGORIES = [
-  { id: 'sinmango', label: 'Planes gratis' },
+  { id: 'sinmango', label: 'Planes crocantes' },
   { id: 'comer', label: 'Comer barato' },
   { id: 'amigos', label: 'Plan con amigos/as' },
   { id: 'challenge', label: "Challenge's" },
   { id: 'musica', label: 'Escuchemos música' },
   { id: 'peli', label: 'Miremos una peli' },
   { id: 'eventos', label: 'Salgamos' },
-  { id: 'ejercicio', label: 'Algo de ejercicios' },
+  { id: 'ejercicio', label: 'Algo de ejercicio' },
   { id: 'familia', label: 'Plan con la flia' },
   { id: 'luchon', label: 'Modo luchón/a' },
   { id: 'juegos', label: 'Juegos' },
-  { id: 'cerca', label: 'Cerca mío' },
+  { id: 'cerca', label: 'Algo tranqui' },
   { id: 'pareja', label: 'En pareja' },
-  { id: 'noche', label: 'Salir de noche' },
+  { id: 'noche', label: 'Salir de gira' },
   { id: 'aire', label: 'Aire libre' },
-  { id: 'lluvia', label: 'Llueve' },
+  { id: 'lluvia', label: 'Ta fresco!' },
   { id: 'fiaca', label: 'Alta fiaca' },
 ];
 
@@ -29,16 +29,16 @@ const CHIP_POOL = [
   { label: 'Escuchemos música', key: 'musica' },
   { label: 'Miremos una peli', key: 'peli' },
   { label: 'Plan con amigos/as', key: 'amigos' },
-  { label: 'Salgamos', key: 'eventos' },
+  { label: 'Giremos', key: 'eventos' },
   { label: 'Algo de ejercicios', key: 'ejercicio' },
   { label: 'Plan con la flia', key: 'familia' },
   { label: 'Modo luchón/a', key: 'luchon' },
   { label: 'Juegos', key: 'juegos' },
   { label: 'Sin gastar', key: 'sinmango' },
-  { label: 'Algo en casa', key: 'fiaca' },
-  { label: 'Cerca mío', key: 'cerca' },
+  { label: 'Algo tranqui', key: 'fiaca' },
+  { label: 'Algo cerca', key: 'cerca' },
   { label: 'Aire libre', key: 'aire' },
-  { label: 'Plan en pareja', key: 'pareja' },
+  { label: 'En pareja', key: 'pareja' },
 ];
 
 function shuffleArray(arr) {
