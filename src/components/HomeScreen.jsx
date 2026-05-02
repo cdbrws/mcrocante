@@ -65,7 +65,7 @@ function getPlanDetail(crocante) {
     bullets: [
       'Ideal para resolver el día sin pensar demasiado.',
       'Pensado para hacer algo real, simple y cercano.',
-      'Si te gusta, podés pedirle a AIA algo parecido.',
+      'Si te gusta, podés pedirle a la IAPuntana algo parecido.',
     ],
   };
 }
@@ -98,7 +98,7 @@ export default function HomeScreen({
                 Modo Crocante
               </h1>
               <div className="text-xs text-stone-500 uppercase tracking-wide mt-1 font-bold">
-                AIA 100% Puntana!
+                IA 100% Puntana!
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function HomeScreen({
                   </div>
 
                   <div className="leading-tight">
-                    <div className="text-[12px] font-extrabold text-stone-800">AIA Crocante</div>
+                    <div className="text-[12px] font-extrabold text-stone-800">IA Crocante</div>
                     <div className="text-[9px] text-green-500 font-bold">● en línea</div>
                   </div>
 
@@ -180,14 +180,7 @@ export default function HomeScreen({
                   </div>
                 </div>
 
-                {/* INPUT */}
-                <div className="px-2 py-2 border-t border-stone-100 flex items-center gap-2 bg-white">
-                  <div className="flex-1 bg-stone-100 rounded-full px-3 py-2 text-[10px] text-stone-400">
-                    Escribí algo...
-                  </div>
-                  <div className="w-7 h-7 bg-naranja rounded-full flex items-center justify-center shadow-md shadow-naranja/20">
-                    <span className="text-white text-[12px] font-black">›</span>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -265,7 +258,7 @@ export default function HomeScreen({
           Ideas rápidas para activar el modo crocante
         </h3>
         <p className="text-xs text-stone-500 mb-3 leading-relaxed">
-          Elegí una opción y AIA te arma el camino: receta, salida, música, peli,
+          Elegí una opción y la IA Puntana te arma el camino: receta, salida, música, peli,
           desafío o plan local según tu mood.
         </p>
 
