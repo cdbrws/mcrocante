@@ -19,31 +19,51 @@ function buildLocalSuggestions(text) {
   if (normalized.includes('mango') || normalized.includes('gratis') || normalized.includes('plata')) {
     category = 'gratis';
   }
-  if (normalized.includes('comer') || normalized.includes('receta')) {
+  if (normalized.includes('comer') || normalized.includes('receta') || normalized.includes('hambre')) {
     category = 'comida';
   }
-  if (normalized.includes('lluvia')) {
+  if (normalized.includes('lluvia') || normalized.includes('llueve')) {
     mood = 'lluvia';
   }
   if (normalized.includes('pareja')) {
     category = 'pareja';
   }
-  if (normalized.includes('peli')) {
+  if (normalized.includes('peli') || normalized.includes('pelicula')) {
     category = 'pelicula';
   }
-  if (normalized.includes('musica')) {
+  if (normalized.includes('musica') || normalized.includes('banda')) {
     category = 'musica';
   }
-  if (normalized.includes('ejercicio') || normalized.includes('mover')) {
+  if (normalized.includes('ejercicio') || normalized.includes('mover') || normalized.includes('caminar')) {
     category = 'ejercicio';
+  }
+  if (normalized.includes('chicos') || normalized.includes('pibes') || normalized.includes('familia')) {
+    category = 'chicos';
+  }
+  if (normalized.includes('san luis') || normalized.includes('salir') || normalized.includes('lugar')) {
+    category = 'san-luis';
+  }
+
+  const hour = new Date().getHours();
+
+  if (hour >= 20 && !category) {
+    category = 'pelicula';
+  }
+
+  if (hour >= 18 && hour < 20 && !category) {
+    category = 'comida';
+  }
+
+  if (hour < 12 && !category) {
+    category = 'comida';
   }
 
   const items = getRandomSuggestions({ category, mood, limit: 4 });
 
-  let textResp = "Te tiro algunas ideas crocantes:\n\n";
+  let textResp = "Mirá esto 👇 capaz te salva el rato:\n\n";
 
-  items.forEach((i, idx) => {
-    textResp += `${idx + 1}. ${i.title} — ${i.description}\n`;
+  items.forEach((item, idx) => {
+    textResp += `${idx + 1}. **${item.title}** — ${item.description}\n`;
   });
 
   return {
@@ -55,12 +75,8 @@ function buildLocalSuggestions(text) {
 }
 
 // ---------------- ENGINE ----------------
-
 export function processMessage(text, weather) {
-
   const normalized = normalize(text);
-
-  // ---------------- EXISTENTE (NO TOCAR LOGICA PRINCIPAL) ----------------
 
   if (normalized.includes("hola") || normalized.includes("buenas")) {
     return {
@@ -105,13 +121,10 @@ export function processMessage(text, weather) {
     };
   }
 
-  // ---------------- NUEVO FALLBACK INTELIGENTE ----------------
-
   return buildLocalSuggestions(text);
 }
 
 // ---------------- OTROS ----------------
-
 export function getCrocanteDelDia() {
   const idx = new Date().getDay() % CROCANTE_DEL_DIA.length;
   return CROCANTE_DEL_DIA[idx];
