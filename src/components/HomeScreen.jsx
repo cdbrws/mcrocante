@@ -107,20 +107,30 @@ export default function HomeScreen({
           <iPhoneMockup />
         </div>
 
-        {/* CHIPS MEJORADOS */}
-        <div className="px-5 mt-5 mb-6">
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {quickChips.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => onCategory(item.key)}
-                className="whitespace-nowrap bg-white/80 backdrop-blur-md border border-white/60 px-3 py-2 rounded-full text-xs font-bold text-stone-700 shadow-sm active:scale-[0.92] transition-all hover:scale-[1.03]"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
+{/* CHIPS FLOTANTES DINAMICOS */}
+<div className="px-5 mt-5 mb-6">
+  <div className="relative min-h-[92px] overflow-visible">
+    {quickChips.map((item, index) => {
+      const styles = [
+        'left-0 top-1 bg-orange-100/90 text-orange-700 border-orange-200 rotate-[-4deg]',
+        'left-[105px] top-0 bg-emerald-100/90 text-emerald-700 border-emerald-200 rotate-[3deg]',
+        'left-[205px] top-2 bg-purple-100/90 text-purple-700 border-purple-200 rotate-[-2deg]',
+        'left-[42px] top-[42px] bg-rose-100/90 text-rose-700 border-rose-200 rotate-[2deg]',
+        'left-[155px] top-[46px] bg-yellow-100/90 text-yellow-700 border-yellow-200 rotate-[-3deg]',
+      ];
+
+      return (
+        <button
+          key={index}
+          onClick={() => onCategory(item.key)}
+          className={`absolute ${styles[index]} border backdrop-blur-md px-2.5 py-1.5 rounded-full text-[10px] font-extrabold shadow-sm active:scale-[0.92] transition-all animate-float`}
+        >
+          {item.label}
+        </button>
+      );
+    })}
+  </div>
+</div>
       </div>
 
       {/* CROCANTE */}
