@@ -146,11 +146,11 @@ export default function HomeScreen({
                   </div>
 
                   <div className="bg-naranja text-white rounded-2xl rounded-br-md px-3 py-2 w-fit self-end max-w-[84%] leading-snug shadow-sm">
-                    Algo tranqui y barato
+                    No tengo un mango, crocante!
                   </div>
 
                   <div className="bg-stone-100 rounded-2xl rounded-bl-md px-3 py-2 w-fit max-w-[86%] leading-snug shadow-sm">
-                    Mirá esto 👇 te puede servir
+                    Estamos todo iguales tranqui, elegi alguna de estas opciones y te guio..
                   </div>
 
                   {/* CHIPS DENTRO DEL CELULAR */}
@@ -183,7 +183,7 @@ export default function HomeScreen({
                 {/* INPUT */}
                 <div className="px-2 py-2 border-t border-stone-100 flex items-center gap-2 bg-white">
                   <div className="flex-1 bg-stone-100 rounded-full px-3 py-2 text-[10px] text-stone-400">
-                    Escribí algo...
+                    Decime que queres hacer...
                   </div>
                   <div className="w-7 h-7 bg-naranja rounded-full flex items-center justify-center shadow-md shadow-naranja/20">
                     <span className="text-white text-[12px] font-black">›</span>
@@ -195,14 +195,7 @@ export default function HomeScreen({
         </div>
 
         {/* BOTON INICIAR CHAT */}
-        <div className="flex justify-center mt-5 mb-5">
-          <button
-            onClick={() => onCategory('start')}
-            className="bg-naranja text-white font-bold px-7 py-3 rounded-full shadow-lg shadow-naranja/25 active:scale-[0.96] transition-all"
-          >
-            Iniciar Chat
-          </button>
-        </div>
+
       </div>
 
       {/* CROCANTE */}
