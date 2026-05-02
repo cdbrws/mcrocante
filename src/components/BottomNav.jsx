@@ -3,9 +3,8 @@ import CookieLogo from './CookieLogo';
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Inicio', custom: <CookieLogo size={22} /> },
-  { id: 'explorar', label: 'Explorar', icon: 'building' },
+  { id: 'explorar', label: 'Que Hay?', icon: 'building' },
   { id: 'chat', label: 'Nuevo', icon: 'plus', special: true },
-  { id: 'guardados', label: 'Guardados', icon: 'bookmark' },
   { id: 'admin', label: 'Admin', icon: 'settings' },
 ];
 
