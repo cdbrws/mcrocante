@@ -5,17 +5,40 @@ import EntrepreneurCard from './EntrepreneurCard';
 
 const ALL_CATEGORIES = [
   { id: 'sinmango', label: 'Planes gratis' },
-  { id: 'comer', label: 'Comer rico' },
-  { id: 'chicos', label: 'Con los pibes' },
-  { id: 'eventos', label: 'Quiero salir' },
-  { id: 'cerca', label: 'Cerca mio' },
+  { id: 'comer', label: 'Comer barato' },
+  { id: 'amigos', label: 'Plan con amigos/as' },
+  { id: 'challenge', label: "Challenge's" },
+  { id: 'musica', label: 'Escuchemos música' },
+  { id: 'peli', label: 'Miremos una peli' },
+  { id: 'eventos', label: 'Salgamos' },
+  { id: 'ejercicio', label: 'Algo de ejercicios' },
+  { id: 'familia', label: 'Plan con la flia' },
+  { id: 'luchon', label: 'Modo luchón/a' },
+  { id: 'juegos', label: 'Juegos' },
+  { id: 'cerca', label: 'Cerca mío' },
   { id: 'pareja', label: 'En pareja' },
   { id: 'noche', label: 'Salir de noche' },
   { id: 'aire', label: 'Aire libre' },
   { id: 'lluvia', label: 'Llueve' },
   { id: 'fiaca', label: 'Alta fiaca' },
-  { id: 'musica', label: 'Musica' },
-  { id: 'peli', label: 'Ver peli' },
+];
+
+const CHIP_POOL = [
+  { label: "Challenge's", key: 'challenge' },
+  { label: 'Comer barato', key: 'comer' },
+  { label: 'Escuchemos música', key: 'musica' },
+  { label: 'Miremos una peli', key: 'peli' },
+  { label: 'Plan con amigos/as', key: 'amigos' },
+  { label: 'Salgamos', key: 'eventos' },
+  { label: 'Algo de ejercicios', key: 'ejercicio' },
+  { label: 'Plan con la flia', key: 'familia' },
+  { label: 'Modo luchón/a', key: 'luchon' },
+  { label: 'Juegos', key: 'juegos' },
+  { label: 'Sin gastar', key: 'sinmango' },
+  { label: 'Algo en casa', key: 'fiaca' },
+  { label: 'Cerca mío', key: 'cerca' },
+  { label: 'Aire libre', key: 'aire' },
+  { label: 'Plan en pareja', key: 'pareja' },
 ];
 
 function shuffleArray(arr) {
@@ -27,37 +50,8 @@ function shuffleArray(arr) {
   return shuffled;
 }
 
-// 🔥 NUEVO: chips dinámicos según hora
 function getDynamicChips() {
-  const hour = new Date().getHours();
-
-  if (hour < 12) {
-    return [
-      { label: 'Desayuno barato', key: 'comer' },
-      { label: 'Arrancar tranqui', key: 'fiaca' },
-      { label: 'Mate en plaza', key: 'aire' },
-      { label: 'Algo rápido', key: 'start' },
-      { label: 'Sin gastar', key: 'sinmango' },
-    ];
-  }
-
-  if (hour < 18) {
-    return [
-      { label: 'Salir a caminar', key: 'aire' },
-      { label: 'Plan con chicos', key: 'chicos' },
-      { label: 'Comer algo', key: 'comer' },
-      { label: 'Cerca mio', key: 'cerca' },
-      { label: 'Algo distinto', key: 'start' },
-    ];
-  }
-
-  return [
-    { label: 'Plan noche', key: 'noche' },
-    { label: 'Ver peli', key: 'peli' },
-    { label: 'Algo tranqui', key: 'fiaca' },
-    { label: 'Plan en pareja', key: 'pareja' },
-    { label: 'Sin gastar', key: 'sinmango' },
-  ];
+  return shuffleArray(CHIP_POOL).slice(0, 5);
 }
 
 export default function HomeScreen({
@@ -71,10 +65,8 @@ export default function HomeScreen({
 
   return (
     <div className="flex flex-col">
-      
       {/* HERO */}
       <div className="relative bg-gradient-to-br from-crema via-white to-naranja-light overflow-hidden">
-        
         <div className="px-5 pt-8 pb-4">
           <div className="flex items-center gap-3 mb-5">
             <div className="relative">
@@ -107,30 +99,30 @@ export default function HomeScreen({
           <iPhoneMockup />
         </div>
 
-{/* CHIPS FLOTANTES DINAMICOS */}
-<div className="px-5 mt-5 mb-6">
-  <div className="relative min-h-[92px] overflow-visible">
-    {quickChips.map((item, index) => {
-      const styles = [
-        'left-0 top-1 bg-orange-100/90 text-orange-700 border-orange-200 rotate-[-4deg]',
-        'left-[105px] top-0 bg-emerald-100/90 text-emerald-700 border-emerald-200 rotate-[3deg]',
-        'left-[205px] top-2 bg-purple-100/90 text-purple-700 border-purple-200 rotate-[-2deg]',
-        'left-[42px] top-[42px] bg-rose-100/90 text-rose-700 border-rose-200 rotate-[2deg]',
-        'left-[155px] top-[46px] bg-yellow-100/90 text-yellow-700 border-yellow-200 rotate-[-3deg]',
-      ];
+        {/* CHIPS FLOTANTES ALEATORIOS */}
+        <div className="px-5 mt-5 mb-6">
+          <div className="relative min-h-[92px] overflow-visible">
+            {quickChips.map((item, index) => {
+              const styles = [
+                'left-0 top-1 bg-orange-100/90 text-orange-700 border-orange-200 rotate-[-4deg]',
+                'left-[105px] top-0 bg-emerald-100/90 text-emerald-700 border-emerald-200 rotate-[3deg]',
+                'left-[205px] top-2 bg-purple-100/90 text-purple-700 border-purple-200 rotate-[-2deg]',
+                'left-[42px] top-[42px] bg-rose-100/90 text-rose-700 border-rose-200 rotate-[2deg]',
+                'left-[155px] top-[46px] bg-yellow-100/90 text-yellow-700 border-yellow-200 rotate-[-3deg]',
+              ];
 
-      return (
-        <button
-          key={index}
-          onClick={() => onCategory(item.key)}
-          className={`absolute ${styles[index]} border backdrop-blur-md px-2.5 py-1.5 rounded-full text-[10px] font-extrabold shadow-sm active:scale-[0.92] transition-all animate-float`}
-        >
-          {item.label}
-        </button>
-      );
-    })}
-  </div>
-</div>
+              return (
+                <button
+                  key={`${item.key}-${index}`}
+                  onClick={() => onCategory(item.key)}
+                  className={`absolute ${styles[index]} border backdrop-blur-md px-2.5 py-1.5 rounded-full text-[10px] font-extrabold shadow-sm active:scale-[0.92] transition-all animate-float`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* CROCANTE */}
