@@ -228,7 +228,7 @@ export default function HomeScreen({
 
             <div className="mt-3 flex items-center gap-2">
               <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-crema text-stone-600">
-                IAPuntana lo recomienda
+                IA Puntana lo recomienda
               </span>
               <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-naranja-light text-naranja">
                 Tocar para abrir
@@ -238,19 +238,49 @@ export default function HomeScreen({
         </div>
       )}
 
-      {/* QUE ES MODO CROCANTE */}
-      <div className="px-5 mt-6">
-        <div className="rounded-3xl bg-white/80 border border-stone-100 shadow-sm p-4 backdrop-blur-md">
-          <p className="text-[13px] leading-relaxed text-stone-800 font-extrabold">
-            ¿Qué es Modo Crocante?
-          </p>
-          <p className="text-[12px] leading-relaxed text-stone-500 mt-1">
-            Ideas para cuando no hay un mango, pero tampoco ganas de aburrirse.
-            IA 100% Puntana te ayuda a decidir qué hacer en San Luis: planes,
-            comida, música, juegos, desafíos y opciones para moverte sin gastar de más.
-          </p>
-        </div>
+   {/* QUE ES MODO CROCANTE - VERSION PRO */}
+<div className="px-5 mt-6">
+  <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-br from-white via-crema to-naranja-light border border-naranja/10 shadow-md">
+
+    {/* glow suave */}
+    <div className="absolute -top-10 -right-10 w-32 h-32 bg-naranja/20 rounded-full blur-2xl" />
+    <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-200/20 rounded-full blur-2xl" />
+
+    {/* header */}
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-8 h-8 bg-naranja rounded-full flex items-center justify-center text-white font-black text-sm shadow-sm">
+        🍪
       </div>
+      <span className="text-sm font-extrabold text-stone-800">
+        Modo Crocante
+      </span>
+    </div>
+
+    {/* mensaje principal */}
+    <p className="text-[14px] font-extrabold text-stone-800 leading-snug">
+      Sin un mango, pero con ideas.
+    </p>
+
+    <p className="text-[12px] text-stone-600 mt-2 leading-relaxed">
+      Una AIA 100% puntana que analiza tu situación y te tira planes reales en San Luis:
+      comer, salir, quedarte en casa o activar algo sin gastar de más.
+    </p>
+
+    {/* badges */}
+    <div className="flex flex-wrap gap-2 mt-4">
+      <span className="text-[10px] font-bold px-2 py-1 bg-white rounded-full border border-stone-200 shadow-sm">
+        +500 ideas
+      </span>
+      <span className="text-[10px] font-bold px-2 py-1 bg-white rounded-full border border-stone-200 shadow-sm">
+        Local real
+      </span>
+      <span className="text-[10px] font-bold px-2 py-1 bg-white rounded-full border border-stone-200 shadow-sm">
+        AIA + IA
+      </span>
+    </div>
+
+  </div>
+</div>
 
       {/* CATEGORIAS */}
       <div className="px-5 mt-6">
