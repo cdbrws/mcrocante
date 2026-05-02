@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import CookieLogo from './CookieLogo';
-import iPhoneMockup from './iPhoneMockup';
 import EntrepreneurCard from './EntrepreneurCard';
 
 const ALL_CATEGORIES = [
@@ -124,10 +123,51 @@ export default function HomeScreen({
           </div>
         </div>
 
-        {/* IPHONE MOCKUP */}
-        <div className="flex justify-center mt-1 -mb-1">
-          <iPhoneMockup />
+<div className="flex justify-center mt-2 -mb-2">
+  <div className="w-[220px] h-[420px] bg-black rounded-[36px] p-[6px] shadow-xl">
+    
+    <div className="w-full h-full bg-white rounded-[30px] overflow-hidden flex flex-col">
+      
+      {/* HEADER CHAT */}
+      <div className="bg-crema px-3 py-2 text-xs font-bold text-stone-700 flex justify-between">
+        <span>AIA Crocante</span>
+        <span className="text-green-500">●</span>
+      </div>
+
+      {/* CHAT */}
+      <div className="flex-1 px-3 py-2 flex flex-col gap-2 text-[11px]">
+
+        <div className="bg-stone-100 rounded-xl px-2 py-1 w-fit max-w-[80%]">
+          Buenas! Buscando qué hacer hoy?
         </div>
+
+        <div className="bg-naranja text-white rounded-xl px-2 py-1 w-fit self-end max-w-[80%]">
+          Algo tranqui y barato
+        </div>
+
+        <div className="bg-stone-100 rounded-xl px-2 py-1 w-fit max-w-[80%]">
+          Mirá esto 👇 te puede servir
+        </div>
+
+        <div className="flex gap-1 flex-wrap mt-1">
+          <span className="bg-crema px-2 py-1 rounded-full text-[10px]">Receta</span>
+          <span className="bg-crema px-2 py-1 rounded-full text-[10px]">Peli</span>
+          <span className="bg-crema px-2 py-1 rounded-full text-[10px]">Música</span>
+        </div>
+
+      </div>
+
+      {/* INPUT */}
+      <div className="px-2 py-2 border-t flex items-center gap-2">
+        <div className="flex-1 bg-stone-100 rounded-full px-2 py-1 text-[10px] text-stone-400">
+          Escribí algo...
+        </div>
+        <div className="w-6 h-6 bg-naranja rounded-full" />
+      </div>
+
+    </div>
+  </div>
+</div>
 
         {/* CHIPS FLOTANTES ALEATORIOS */}
         <div className="px-5 mt-3 mb-3">
