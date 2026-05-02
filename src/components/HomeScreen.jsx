@@ -65,7 +65,7 @@ function getPlanDetail(crocante) {
     bullets: [
       'Ideal para resolver el día sin pensar demasiado.',
       'Pensado para hacer algo real, simple y cercano.',
-      'Si te gusta, podés pedirle a IA algo parecido.',
+      'Si te gusta, podés pedirle a AIA algo parecido.',
     ],
   };
 }
@@ -102,99 +102,106 @@ export default function HomeScreen({
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="rounded-3xl bg-white/70 border border-white/80 shadow-sm p-4 mb-4 backdrop-blur-md">
-            <p className="text-[13px] leading-relaxed text-stone-700 font-semibold">
-              Ideas para cuando no hay un mango, pero tampoco ganas de aburrirse.
-            </p>
-            <p className="text-[12px] leading-relaxed text-stone-500 mt-1">
-              IAPuntana te ayuda a decidir qué hacer en San Luis: planes, comida, música,
-              juegos, desafíos y opciones para moverte sin gastar de más.
-            </p>
+        {/* CELULAR SIMULADO */}
+        <div className="flex justify-center mt-1">
+          <div className="relative">
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[210px] h-8 bg-black/20 blur-xl rounded-full" />
+            <div className="absolute -inset-2 rounded-[44px] bg-gradient-to-br from-naranja/20 via-purple-300/10 to-emerald-300/20 blur-md" />
+
+            <div className="relative w-[236px] h-[452px] bg-gradient-to-b from-stone-950 via-black to-stone-800 rounded-[42px] p-[7px] shadow-[0_18px_40px_rgba(0,0,0,0.36)]">
+              {/* botones laterales */}
+              <div className="absolute -left-[3px] top-[76px] w-[3px] h-10 bg-stone-700 rounded-l-full" />
+              <div className="absolute -left-[3px] top-[128px] w-[3px] h-14 bg-stone-700 rounded-l-full" />
+              <div className="absolute -right-[3px] top-[112px] w-[3px] h-20 bg-stone-700 rounded-r-full" />
+
+              {/* reflejos */}
+              <div className="absolute left-[6px] top-10 w-[2px] h-24 bg-white/20 rounded-full" />
+              <div className="absolute right-[6px] top-24 w-[2px] h-28 bg-white/10 rounded-full" />
+
+              <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col border border-white/10">
+                <div className="absolute top-[13px] left-1/2 -translate-x-1/2 w-20 h-4 bg-black rounded-full z-20" />
+
+                {/* HEADER CHAT */}
+                <div className="bg-crema px-3 pt-7 pb-2 text-xs font-bold text-stone-700 flex items-center gap-2 border-b border-stone-100">
+                  <div className="relative w-7 h-7 bg-naranja rounded-full flex items-center justify-center overflow-hidden shadow-sm">
+                    <CookieLogo size={24} />
+                  </div>
+
+                  <div className="leading-tight">
+                    <div className="text-[12px] font-extrabold text-stone-800">AIA Crocante</div>
+                    <div className="text-[9px] text-green-500 font-bold">● en línea</div>
+                  </div>
+
+                  <div className="ml-auto text-[10px] bg-white rounded-full px-2 py-1 text-stone-500 shadow-sm">
+                    12°
+                  </div>
+                </div>
+
+                {/* CHAT */}
+                <div className="flex-1 px-3 py-3 flex flex-col gap-2 text-[11px] bg-gradient-to-b from-white to-crema/40">
+                  <div className="bg-stone-100 rounded-2xl rounded-bl-md px-3 py-2 w-fit max-w-[84%] leading-snug shadow-sm">
+                    Buenas! Buscando qué hacer hoy?
+                  </div>
+
+                  <div className="bg-naranja text-white rounded-2xl rounded-br-md px-3 py-2 w-fit self-end max-w-[84%] leading-snug shadow-sm">
+                    Algo tranqui y barato
+                  </div>
+
+                  <div className="bg-stone-100 rounded-2xl rounded-bl-md px-3 py-2 w-fit max-w-[86%] leading-snug shadow-sm">
+                    Mirá esto 👇 te puede servir
+                  </div>
+
+                  {/* CHIPS DENTRO DEL CELULAR */}
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {quickChips.map((item, index) => {
+                      const chipStyles = [
+                        'bg-orange-100 text-orange-700 border-orange-200',
+                        'bg-emerald-100 text-emerald-700 border-emerald-200',
+                        'bg-purple-100 text-purple-700 border-purple-200',
+                        'bg-rose-100 text-rose-700 border-rose-200',
+                        'bg-yellow-100 text-yellow-700 border-yellow-200',
+                        'bg-lime-100 text-lime-700 border-lime-200',
+                        'bg-pink-100 text-pink-700 border-pink-200',
+                        'bg-sky-100 text-sky-700 border-sky-200',
+                      ];
+
+                      return (
+                        <button
+                          key={`${item.key}-${index}`}
+                          onClick={() => onCategory(item.key)}
+                          className={`${chipStyles[index]} border px-2 py-1 rounded-full text-[9px] font-extrabold shadow-sm active:scale-[0.94] transition-transform`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* INPUT */}
+                <div className="px-2 py-2 border-t border-stone-100 flex items-center gap-2 bg-white">
+                  <div className="flex-1 bg-stone-100 rounded-full px-3 py-2 text-[10px] text-stone-400">
+                    Escribí algo...
+                  </div>
+                  <div className="w-7 h-7 bg-naranja rounded-full flex items-center justify-center shadow-md shadow-naranja/20">
+                    <span className="text-white text-[12px] font-black">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div className="flex justify-center">
-            <button
-              onClick={() => onCategory('start')}
-              className="bg-naranja text-white font-bold px-6 py-3 rounded-full shadow-md active:scale-[0.96] transition-all"
-            >
-              Iniciar Chat
-            </button>
-          </div>
         </div>
 
-<div className="flex justify-center mt-2 -mb-2">
-  <div className="w-[220px] h-[420px] bg-black rounded-[36px] p-[6px] shadow-xl">
-    
-    <div className="w-full h-full bg-white rounded-[30px] overflow-hidden flex flex-col">
-      
-      {/* HEADER CHAT */}
-      <div className="bg-crema px-3 py-2 text-xs font-bold text-stone-700 flex justify-between">
-        <span>AIA Crocante</span>
-        <span className="text-green-500">●</span>
-      </div>
-
-      {/* CHAT */}
-      <div className="flex-1 px-3 py-2 flex flex-col gap-2 text-[11px]">
-
-        <div className="bg-stone-100 rounded-xl px-2 py-1 w-fit max-w-[80%]">
-          Buenas! Buscando qué hacer hoy?
-        </div>
-
-        <div className="bg-naranja text-white rounded-xl px-2 py-1 w-fit self-end max-w-[80%]">
-          Algo tranqui y barato
-        </div>
-
-        <div className="bg-stone-100 rounded-xl px-2 py-1 w-fit max-w-[80%]">
-          Mirá esto 👇 te puede servir
-        </div>
-
-        <div className="flex gap-1 flex-wrap mt-1">
-          <span className="bg-crema px-2 py-1 rounded-full text-[10px]">Receta</span>
-          <span className="bg-crema px-2 py-1 rounded-full text-[10px]">Peli</span>
-          <span className="bg-crema px-2 py-1 rounded-full text-[10px]">Música</span>
-        </div>
-
-      </div>
-
-      {/* INPUT */}
-      <div className="px-2 py-2 border-t flex items-center gap-2">
-        <div className="flex-1 bg-stone-100 rounded-full px-2 py-1 text-[10px] text-stone-400">
-          Escribí algo...
-        </div>
-        <div className="w-6 h-6 bg-naranja rounded-full" />
-      </div>
-
-    </div>
-  </div>
-</div>
-
-        {/* CHIPS FLOTANTES ALEATORIOS */}
-        <div className="px-5 mt-3 mb-3">
-          <div className="relative min-h-[128px] overflow-visible">
-            {quickChips.map((item, index) => {
-              const styles = [
-                'left-0 top-1 bg-orange-100/90 text-orange-700 border-orange-200 rotate-[-4deg]',
-                'left-[96px] top-0 bg-emerald-100/90 text-emerald-700 border-emerald-200 rotate-[3deg]',
-                'left-[196px] top-5 bg-purple-100/90 text-purple-700 border-purple-200 rotate-[-2deg]',
-                'left-[22px] top-[42px] bg-rose-100/90 text-rose-700 border-rose-200 rotate-[2deg]',
-                'left-[138px] top-[44px] bg-yellow-100/90 text-yellow-700 border-yellow-200 rotate-[-3deg]',
-                'left-[0px] top-[82px] bg-lime-100/90 text-lime-700 border-lime-200 rotate-[3deg]',
-                'left-[108px] top-[82px] bg-pink-100/90 text-pink-700 border-pink-200 rotate-[-2deg]',
-                'left-[208px] top-[76px] bg-sky-100/90 text-sky-700 border-sky-200 rotate-[4deg]',
-              ];
-
-              return (
-                <button
-                  key={`${item.key}-${index}`}
-                  onClick={() => onCategory(item.key)}
-                  className={`absolute ${styles[index]} border backdrop-blur-md px-2.5 py-1.5 rounded-full text-[10px] font-extrabold shadow-sm active:scale-[0.92] transition-all animate-float`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* BOTON INICIAR CHAT */}
+        <div className="flex justify-center mt-5 mb-5">
+          <button
+            onClick={() => onCategory('start')}
+            className="bg-naranja text-white font-bold px-7 py-3 rounded-full shadow-lg shadow-naranja/25 active:scale-[0.96] transition-all"
+          >
+            Iniciar Chat
+          </button>
         </div>
       </div>
 
@@ -228,7 +235,7 @@ export default function HomeScreen({
 
             <div className="mt-3 flex items-center gap-2">
               <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-crema text-stone-600">
-                AIA lo recomienda
+                IAPuntana lo recomienda
               </span>
               <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-naranja-light text-naranja">
                 Tocar para abrir
@@ -238,13 +245,27 @@ export default function HomeScreen({
         </div>
       )}
 
+      {/* QUE ES MODO CROCANTE */}
+      <div className="px-5 mt-6">
+        <div className="rounded-3xl bg-white/80 border border-stone-100 shadow-sm p-4 backdrop-blur-md">
+          <p className="text-[13px] leading-relaxed text-stone-800 font-extrabold">
+            ¿Qué es Modo Crocante?
+          </p>
+          <p className="text-[12px] leading-relaxed text-stone-500 mt-1">
+            Ideas para cuando no hay un mango, pero tampoco ganas de aburrirse.
+            IA 100% Puntana te ayuda a decidir qué hacer en San Luis: planes,
+            comida, música, juegos, desafíos y opciones para moverte sin gastar de más.
+          </p>
+        </div>
+      </div>
+
       {/* CATEGORIAS */}
       <div className="px-5 mt-6">
         <h3 className="text-base font-extrabold text-stone-800 mb-1">
           Ideas rápidas para activar el modo crocante
         </h3>
         <p className="text-xs text-stone-500 mb-3 leading-relaxed">
-          Elegí una opción y la IA Puntana te arma el camino: receta, salida, música, peli,
+          Elegí una opción y AIA te arma el camino: receta, salida, música, peli,
           desafío o plan local según tu mood.
         </p>
 
