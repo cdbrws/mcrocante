@@ -51,7 +51,7 @@ function shuffleArray(arr) {
 }
 
 function getDynamicChips() {
-  return shuffleArray(CHIP_POOL).slice(0, 5);
+  return shuffleArray(CHIP_POOL).slice(0, 8);
 }
 
 export default function HomeScreen({
