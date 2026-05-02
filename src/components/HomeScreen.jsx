@@ -43,7 +43,7 @@ const CHIP_POOL = [
 
 function shuffleArray(arr) {
   const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
@@ -51,7 +51,7 @@ function shuffleArray(arr) {
 }
 
 function getDynamicChips() {
-  return shuffleArray(CHIP_POOL).slice(0, 5);
+  return shuffleArray(CHIP_POOL).slice(0, 8);
 }
 
 export default function HomeScreen({
@@ -79,7 +79,7 @@ export default function HomeScreen({
                 Modo Crocante
               </h1>
               <div className="text-xs text-stone-500 uppercase tracking-wide mt-1 font-bold">
-                AIA 100% Puntana!
+                IA 100% Puntana!
               </div>
             </div>
           </div>
@@ -99,16 +99,19 @@ export default function HomeScreen({
           <iPhoneMockup />
         </div>
 
-        {/* CHIPS FLOTANTES ALEATORIOS */}
-        <div className="px-5 mt-5 mb-6">
-          <div className="relative min-h-[92px] overflow-visible">
+        {/* CHIPS FLOTANTES PRO ALEATORIOS */}
+        <div className="px-5 mt-5 mb-7">
+          <div className="relative min-h-[138px] overflow-visible">
             {quickChips.map((item, index) => {
               const styles = [
                 'left-0 top-1 bg-orange-100/90 text-orange-700 border-orange-200 rotate-[-4deg]',
-                'left-[105px] top-0 bg-emerald-100/90 text-emerald-700 border-emerald-200 rotate-[3deg]',
-                'left-[205px] top-2 bg-purple-100/90 text-purple-700 border-purple-200 rotate-[-2deg]',
-                'left-[42px] top-[42px] bg-rose-100/90 text-rose-700 border-rose-200 rotate-[2deg]',
-                'left-[155px] top-[46px] bg-yellow-100/90 text-yellow-700 border-yellow-200 rotate-[-3deg]',
+                'left-[104px] top-0 bg-emerald-100/90 text-emerald-700 border-emerald-200 rotate-[3deg]',
+                'left-[218px] top-3 bg-purple-100/90 text-purple-700 border-purple-200 rotate-[-2deg]',
+                'left-[28px] top-[42px] bg-rose-100/90 text-rose-700 border-rose-200 rotate-[2deg]',
+                'left-[148px] top-[45px] bg-yellow-100/90 text-yellow-700 border-yellow-200 rotate-[-3deg]',
+                'left-[238px] top-[68px] bg-sky-100/90 text-sky-700 border-sky-200 rotate-[4deg]',
+                'left-[8px] top-[88px] bg-lime-100/90 text-lime-700 border-lime-200 rotate-[3deg]',
+                'left-[134px] top-[94px] bg-pink-100/90 text-pink-700 border-pink-200 rotate-[-2deg]',
               ];
 
               return (
