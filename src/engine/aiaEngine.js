@@ -1,7 +1,7 @@
 import { DATA, CROCANTE_DEL_DIA, EMPRENDEDORES } from '../data/places';
 import { LOCALIDADES_SL } from '../data/localidades';
 import { RECETAS } from '../data/recetas';
-import { PELICULAS, BANDAS, PLANCHILL, ACTIVIDADES_LLUVIA, ACTIVIDADES_NOCHE, ACTIVIDADES_PAREJA } from '../data/aiaData';
+import { PELICULAS, BANDAS } from '../data/aiaData';
 import { getRandomSuggestions } from '../data/suggestions';
 
 // ---------------- UTIL ----------------
@@ -9,62 +9,63 @@ function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function normalize(text) { return text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function shuffle(arr) { const s = [...arr]; for (let i = s.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [s[i], s[j]] = [s[j], s[i]]; } return s; }
 
-// ---------------- NUEVO FALLBACK ----------------
+// 🔥 memoria simple anti-repetición
+let lastSuggestions = [];
+
+// ---------------- FALLBACK INTELIGENTE FINAL ----------------
 function buildLocalSuggestions(text) {
   const normalized = normalize(text);
 
   let category = null;
   let mood = null;
 
-  if (normalized.includes('mango') || normalized.includes('gratis') || normalized.includes('plata')) {
-    category = 'gratis';
-  }
-  if (normalized.includes('comer') || normalized.includes('receta') || normalized.includes('hambre')) {
-    category = 'comida';
-  }
-  if (normalized.includes('lluvia') || normalized.includes('llueve')) {
-    mood = 'lluvia';
-  }
-  if (normalized.includes('pareja')) {
-    category = 'pareja';
-  }
-  if (normalized.includes('peli') || normalized.includes('pelicula')) {
-    category = 'pelicula';
-  }
-  if (normalized.includes('musica') || normalized.includes('banda')) {
-    category = 'musica';
-  }
-  if (normalized.includes('ejercicio') || normalized.includes('mover') || normalized.includes('caminar')) {
-    category = 'ejercicio';
-  }
-  if (normalized.includes('chicos') || normalized.includes('pibes') || normalized.includes('familia')) {
-    category = 'chicos';
-  }
-  if (normalized.includes('san luis') || normalized.includes('salir') || normalized.includes('lugar')) {
-    category = 'san-luis';
-  }
+  // intención por palabras
+  if (normalized.includes('mango') || normalized.includes('gratis') || normalized.includes('plata')) category = 'gratis';
+  if (normalized.includes('comer') || normalized.includes('receta') || normalized.includes('hambre')) category = 'comida';
+  if (normalized.includes('lluvia') || normalized.includes('llueve')) mood = 'lluvia';
+  if (normalized.includes('pareja')) category = 'pareja';
+  if (normalized.includes('peli') || normalized.includes('pelicula')) category = 'pelicula';
+  if (normalized.includes('musica') || normalized.includes('banda')) category = 'musica';
+  if (normalized.includes('ejercicio') || normalized.includes('mover') || normalized.includes('caminar')) category = 'ejercicio';
+  if (normalized.includes('chicos') || normalized.includes('pibes') || normalized.includes('familia')) category = 'chicos';
+  if (normalized.includes('san luis') || normalized.includes('salir') || normalized.includes('lugar')) category = 'san-luis';
 
+  // contexto horario
   const hour = new Date().getHours();
 
-  if (hour >= 20 && !category) {
-    category = 'pelicula';
+  if (!category) {
+    if (hour >= 20) category = 'pelicula';
+    else if (hour >= 18) category = 'comida';
+    else if (hour < 12) category = 'comida';
   }
 
-  if (hour >= 18 && hour < 20 && !category) {
-    category = 'comida';
+  // intro contextual (enganche)
+  let intro = "";
+
+  if (normalized.includes("no se") || normalized.includes("que hago")) {
+    intro = "Tranqui, nos pasa a todos.\n\n";
   }
 
-  if (hour < 12 && !category) {
-    category = 'comida';
+  if (normalized.includes("aburrido")) {
+    intro = "Ese es el peor estado 😅\n\n";
   }
 
-  const items = getRandomSuggestions({ category, mood, limit: 4 });
+  // sugerencias con filtro anti-repetición
+  const raw = getRandomSuggestions({ category, mood, limit: 6 });
 
-  let textResp = "Mirá esto 👇 capaz te salva el rato:\n\n";
+  const items = raw
+    .filter(i => !lastSuggestions.includes(i.id))
+    .slice(0, 4);
+
+  lastSuggestions = items.map(i => i.id);
+
+  let textResp = intro + "Mirá esto 👇 capaz te salva el rato:\n\n";
 
   items.forEach((item, idx) => {
     textResp += `${idx + 1}. **${item.title}** — ${item.description}\n`;
   });
+
+  textResp += "\n¿Querés que lo adapte más a vos?";
 
   return {
     text: textResp,
@@ -75,7 +76,7 @@ function buildLocalSuggestions(text) {
 }
 
 // ---------------- ENGINE ----------------
-export function processMessage(text, weather) {
+export function processMessage(text) {
   const normalized = normalize(text);
 
   if (normalized.includes("hola") || normalized.includes("buenas")) {
@@ -121,6 +122,7 @@ export function processMessage(text, weather) {
     };
   }
 
+  // 🔥 fallback final
   return buildLocalSuggestions(text);
 }
 
