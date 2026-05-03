@@ -189,42 +189,303 @@ function findBandByText(text) {
   });
 }
 
+// ---------------- INTENCIÓN CROCRANTE ----------------
+function detectLocalIntent(text) {
+  const normalized = normalize(text);
+
+  const hasAny = (words) => words.some((word) => normalized.includes(word));
+
+  if (
+    hasAny([
+      'no tengo un mango',
+      'sin plata',
+      'gratis',
+      'barato',
+      'barata',
+      'no tengo plata',
+      'estoy seco',
+      'ando seco',
+      'poca plata',
+      'economico',
+      'económico',
+    ])
+  ) {
+    return {
+      category: 'comer-barato',
+      mood: 'sin-plata',
+      label: 'comer-barato',
+    };
+  }
+
+  if (
+    hasAny([
+      'fiaca',
+      'paja',
+      'cansado',
+      'cansada',
+      'aburrido',
+      'aburrida',
+      'tirado',
+      'tirada',
+      'no quiero hacer nada',
+      'tranqui',
+      'algo tranquilo',
+    ])
+  ) {
+    return {
+      category: 'alta-fiaca',
+      mood: 'fiaca',
+      label: 'alta-fiaca',
+    };
+  }
+
+  if (
+    hasAny([
+      'hijos',
+      'hijas',
+      'niños',
+      'ninos',
+      'chicos',
+      'chicas',
+      'pibes',
+      'pibas',
+      'nenes',
+      'nenas',
+      'criaturas',
+      'familia',
+    ])
+  ) {
+    return {
+      category: 'modo-luchon',
+      mood: 'familia',
+      label: 'modo-luchon',
+    };
+  }
+
+  if (
+    hasAny([
+      'amigos',
+      'amigas',
+      'juntada',
+      'juntarnos',
+      'previa',
+      'grupo',
+      'banda',
+      'compas',
+    ])
+  ) {
+    return {
+      category: 'amigos',
+      mood: 'amigos',
+      label: 'amigos',
+    };
+  }
+
+  if (
+    hasAny([
+      'juego',
+      'jugar',
+      'cartas',
+      'truco',
+      'generala',
+      'batalla naval',
+      'challenge',
+      'desafio',
+      'desafío',
+      'reto',
+    ])
+  ) {
+    return {
+      category: normalized.includes('challenge') || normalized.includes('desafio') || normalized.includes('desafío') || normalized.includes('reto')
+        ? 'challenge'
+        : 'juegos',
+      mood: null,
+      label: 'juegos',
+    };
+  }
+
+  if (
+    hasAny([
+      'comer',
+      'hambre',
+      'cocinar',
+      'receta',
+      'cena',
+      'almuerzo',
+      'merienda',
+      'algo rico',
+    ])
+  ) {
+    return {
+      category: 'comida',
+      mood: null,
+      label: 'comida',
+    };
+  }
+
+  if (
+    hasAny([
+      'peli',
+      'pelicula',
+      'película',
+      'netflix',
+      'youtube',
+      'mirar algo',
+      'cine',
+    ])
+  ) {
+    return {
+      category: 'pelicula',
+      mood: null,
+      label: 'pelicula',
+    };
+  }
+
+  if (
+    hasAny([
+      'musica',
+      'música',
+      'cancion',
+      'canción',
+      'playlist',
+      'escuchar',
+      'banda',
+    ])
+  ) {
+    return {
+      category: 'musica',
+      mood: null,
+      label: 'musica',
+    };
+  }
+
+  if (
+    hasAny([
+      'ejercicio',
+      'entrenar',
+      'moverme',
+      'caminar',
+      'rutina',
+      'actividad fisica',
+      'actividad física',
+    ])
+  ) {
+    return {
+      category: 'ejercicio',
+      mood: 'moverme',
+      label: 'ejercicio',
+    };
+  }
+
+  if (
+    hasAny([
+      'salir',
+      'afuera',
+      'aire libre',
+      'paseo',
+      'plaza',
+      'san luis',
+      'potrero',
+      'la punta',
+      'juana koslay',
+      'volcan',
+      'volcán',
+      'trapiche',
+    ])
+  ) {
+    return {
+      category: 'san-luis',
+      mood: 'aire',
+      label: 'san-luis',
+    };
+  }
+
+  return {
+    category: null,
+    mood: null,
+    label: null,
+  };
+}
+
+function buildIntentIntro(intentLabel, normalized) {
+  if (intentLabel === 'comer-barato') {
+    return "Modo crocante activado. Vamos a resolver sin gastar de más 💪\n\n";
+  }
+
+  if (intentLabel === 'alta-fiaca') {
+    return "Nivel fiaca detectado. No te voy a exigir heroísmo, apenas sobrevivir con dignidad 😄\n\n";
+  }
+
+  if (intentLabel === 'modo-luchon') {
+    return "Modo luchón/a activado. Ideas para entretener a los chicos sin vaciar la billetera 👇\n\n";
+  }
+
+  if (intentLabel === 'amigos') {
+    return "Plan con amigos/as, versión simple y sin vender un riñón 👇\n\n";
+  }
+
+  if (intentLabel === 'juegos') {
+    return "Vamos con juegos simples, de esos que no necesitan producción de Netflix 👇\n\n";
+  }
+
+  if (intentLabel === 'comida') {
+    return "Vamos por algo para comer, simple y crocante 👇\n\n";
+  }
+
+  if (intentLabel === 'pelicula') {
+    return "Plan sillón detectado. Van opciones para mirar sin ponerse profundo 👇\n\n";
+  }
+
+  if (intentLabel === 'musica') {
+    return "Vamos con música para levantar el clima 👇\n\n";
+  }
+
+  if (intentLabel === 'ejercicio') {
+    return "Vamos a mover un poco el cuerpo sin pagar gimnasio 👇\n\n";
+  }
+
+  if (intentLabel === 'san-luis') {
+    return "Vamos con algo para hacer en San Luis sin complicarla 👇\n\n";
+  }
+
+  if (normalized.includes("no se") || normalized.includes("que hago")) {
+    return "Tranqui, nos pasa a todos. Te tiro opciones crocantes 👇\n\n";
+  }
+
+  if (normalized.includes("aburrido") || normalized.includes("aburrida")) {
+    return "Ese estado es peligroso: terminás scrolleando dos horas. Mejor esto 👇\n\n";
+  }
+
+  return "";
+}
+
 // ---------------- FALLBACK INTELIGENTE FINAL ----------------
 function buildLocalSuggestions(text) {
   const normalized = normalize(text);
 
-  let category = null;
-  let mood = null;
-
-  if (normalized.includes('mango') || normalized.includes('gratis') || normalized.includes('plata')) category = 'gratis';
-  if (normalized.includes('comer') || normalized.includes('receta') || normalized.includes('hambre')) category = 'comida';
-  if (normalized.includes('lluvia') || normalized.includes('llueve')) mood = 'lluvia';
-  if (normalized.includes('pareja')) category = 'pareja';
-  if (normalized.includes('peli') || normalized.includes('pelicula')) category = 'pelicula';
-  if (normalized.includes('musica') || normalized.includes('banda')) category = 'musica';
-  if (normalized.includes('ejercicio') || normalized.includes('mover') || normalized.includes('caminar')) category = 'ejercicio';
-  if (normalized.includes('chicos') || normalized.includes('pibes') || normalized.includes('familia')) category = 'chicos';
-  if (normalized.includes('san luis') || normalized.includes('salir') || normalized.includes('lugar')) category = 'san-luis';
+  let { category, mood, label } = detectLocalIntent(text);
 
   const hour = new Date().getHours();
 
   if (!category) {
-    if (hour >= 20) category = 'pelicula';
-    else if (hour >= 18) category = 'comida';
-    else if (hour < 12) category = 'comida';
+    if (hour >= 20) {
+      category = 'pelicula';
+      label = 'pelicula';
+    } else if (hour >= 18) {
+      category = 'comida';
+      label = 'comida';
+    } else if (hour < 12) {
+      category = 'comida';
+      label = 'comida';
+    } else {
+      category = 'casa';
+      label = 'casa';
+    }
   }
 
-  let intro = "";
+  const intro = buildIntentIntro(label, normalized);
 
-  if (normalized.includes("no se") || normalized.includes("que hago")) {
-    intro = "Tranqui, nos pasa a todos.\n\n";
-  }
-
-  if (normalized.includes("aburrido")) {
-    intro = "Ese es el peor estado 😅\n\n";
-  }
-
-  const raw = getRandomSuggestions({ category, mood, limit: 6 });
+  const raw = getRandomSuggestions({ category, mood, limit: 8 });
 
   let items = raw
     .filter((item) => !lastSuggestions.includes(item.id))
@@ -236,19 +497,19 @@ function buildLocalSuggestions(text) {
 
   lastSuggestions = items.map((item) => item.id);
 
-  let textResp = intro + "Mirá esto 👇 capaz te salva el rato:\n\n";
+  let textResp = intro + "Mirá esto:\n\n";
 
   items.forEach((item, idx) => {
     textResp += `${idx + 1}. **${item.title}** — ${item.description}\n`;
   });
 
-  textResp += "\n¿Querés que lo adapte más a vos?";
+  textResp += "\n¿Querés que lo ajuste a casa, calle, chicos/as o cero plata?";
 
   return {
     text: textResp,
     results: [],
-    suggestions: ["Otra idea", "Comer", "Casa"],
-    intent: 'fallback-local',
+    suggestions: ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a"],
+    intent: label || 'fallback-local',
   };
 }
 
@@ -316,20 +577,70 @@ export function processMessage(text) {
   }
 
   if (normalized.includes("fiaca")) {
+    const raw = getRandomSuggestions({ category: 'alta-fiaca', mood: 'fiaca', limit: 4 });
+    const suggestions = raw.slice(0, 3).map((item) => item.title);
+
     return {
-      text: "Alta fiaca. ¿Querés resolverlo desde el sillón?",
+      text: "Alta fiaca. Te dejo opciones de mínimo esfuerzo:",
       results: [],
-      suggestions: ["Buscamos una peli", "Cocinamos algo", "Escuchamos música"],
-      intent: 'fiaca',
+      suggestions: suggestions.length ? suggestions : ["Buscamos una peli", "Cocinamos algo", "Escuchamos música"],
+      intent: 'alta-fiaca',
     };
   }
 
-  if (normalized.includes("no tengo un mango") || normalized.includes("sin plata") || normalized.includes("gratis")) {
+  if (
+    normalized.includes("no tengo un mango") ||
+    normalized.includes("sin plata") ||
+    normalized.includes("gratis") ||
+    normalized.includes("no tengo plata") ||
+    normalized.includes("estoy seco")
+  ) {
+    const raw = getRandomSuggestions({ category: 'comer-barato', mood: 'sin-plata', limit: 4 });
+    const suggestions = raw.slice(0, 3).map((item) => item.title);
+
     return {
-      text: "Perfecto. Vamos sin gastar.",
+      text: "Perfecto. Vamos sin gastar de más.",
       results: [],
-      suggestions: ["Salir gratis", "Algo en casa", "Mate en plaza"],
-      intent: 'gratis',
+      suggestions: suggestions.length ? suggestions : ["Salir gratis", "Algo en casa", "Mate en plaza"],
+      intent: 'comer-barato',
+    };
+  }
+
+  if (
+    normalized.includes("modo luchon") ||
+    normalized.includes("modo luchón") ||
+    normalized.includes("con chicos") ||
+    normalized.includes("con mis hijos") ||
+    normalized.includes("con los chicos") ||
+    normalized.includes("niños") ||
+    normalized.includes("ninos")
+  ) {
+    const raw = getRandomSuggestions({ category: 'modo-luchon', mood: 'familia', limit: 4 });
+    const suggestions = raw.slice(0, 3).map((item) => item.title);
+
+    return {
+      text: "Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:",
+      results: [],
+      suggestions: suggestions.length ? suggestions : ["Búsqueda del tesoro casera", "Dibujar con lo que haya", "Ver dibujitos gratis"],
+      intent: 'modo-luchon',
+    };
+  }
+
+  if (
+    normalized.includes("juegos") ||
+    normalized.includes("jugar") ||
+    normalized.includes("truco") ||
+    normalized.includes("generala") ||
+    normalized.includes("batalla naval")
+  ) {
+    const raw = getRandomSuggestions({ category: 'juegos', limit: 4 });
+    const suggestions = raw.slice(0, 3).map((item) => item.title);
+
+    return {
+      text: "Vamos con juegos simples, baratos y sin vueltas:",
+      results: [],
+      suggestions: suggestions.length ? suggestions : ["Batalla naval en papel", "Truco", "Dígalo con mímica"],
+      intent: 'juegos',
     };
   }
 
