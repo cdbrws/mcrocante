@@ -379,22 +379,23 @@ function executeWithBrain(text, target) {
     });
   }
 
-if (target?.intent === 'COCINAR') {
-  updateContext({
-    intent: 'COCINAR',
-    category: 'comida',
-    action: 'clarifying',
-    options: ['Arroz', 'Fideos', 'Harina', 'Papa', 'Escribo lo que tengo'],
-  });
+  if (target?.intent === 'COCINAR') {
+    updateContext({
+      intent: 'COCINAR',
+      category: 'comida',
+      action: 'clarifying',
+      options: ['Arroz', 'Fideos', 'Harina', 'Papa', 'Escribo lo que tengo'],
+    });
 
-  return {
-    text: 'Bien. ¿Qué tenés en casa? Podés escribirlo.',
-    results: [],
-    suggestions: ['Arroz', 'Fideos', 'Harina', 'Papa', 'Escribo lo que tengo'],
-    intent: 'cocinar-clarify',
-    category: 'comida',
-  };
-}
+    return {
+      text: 'Bien. ¿Qué tenés en casa? Podés escribirlo.',
+      results: [],
+      suggestions: ['Arroz', 'Fideos', 'Harina', 'Papa', 'Escribo lo que tengo'],
+      intent: 'cocinar-clarify',
+      category: 'comida',
+    };
+  }
+
   if (target?.intent === 'PELI') {
     return movieOptionsResponse();
   }
@@ -426,21 +427,24 @@ if (target?.intent === 'COCINAR') {
       suggestions: ['Otra idea', 'Algo en casa', 'Comer barato', 'Aire libre'],
     });
   }
+  return processMessageInternal(text);
+}
 function recipeFromIngredientsResponse(text) {
-  const normalized = normalize(text);
+  const normalized = normalize(text || '');
   const ingredients = normalized.split(' ').filter(Boolean);
 
   const recipes = (getRecetasArray() || []).filter(Boolean);
 
-if (!recipes.length) {
-  return {
-    text: 'Todavía no tengo recetas cargadas para eso. Probá con algo como arroz, harina o huevo.',
-    results: [],
-    suggestions: ['Arroz', 'Harina', 'Huevo', 'Otra idea'],
-    intent: 'cocinar-clarify',
-    category: 'comida',
-  };
-}
+  if (!recipes.length) {
+    return {
+      text: 'Todavía no tengo recetas cargadas para eso. Probá con algo como arroz, harina o huevo.',
+      results: [],
+      suggestions: ['Arroz', 'Harina', 'Huevo', 'Otra idea'],
+      intent: 'cocinar-clarify',
+      category: 'comida',
+    };
+  }
+
   const scored = recipes
     .map((recipe) => {
       const haystack = normalize([
@@ -448,8 +452,8 @@ if (!recipes.length) {
         recipe?.descripcion,
         recipe?.description,
         recipe?.tip,
-...(Array.isArray(recipe?.ingredientes) ? recipe.ingredientes : []),
-...(Array.isArray(recipe?.tags) ? recipe.tags : []),
+        ...(Array.isArray(recipe?.ingredientes) ? recipe.ingredientes : []),
+        ...(Array.isArray(recipe?.tags) ? recipe.tags : []),
       ].join(' '));
 
       const score = ingredients.reduce((acc, ing) => {
