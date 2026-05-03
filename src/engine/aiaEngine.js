@@ -432,21 +432,31 @@ function processMessageWithBrain(text) {
     return processMessageInternal(text);
   }
 
+  const ctx = getContext();
+  const isFirstInteraction = !ctx.lastAction;
+
+  // 🧠 1. PRIMER MENSAJE → SIEMPRE PREGUNTA
+  if (isFirstInteraction) {
+    return makeDecisionResponse(text, inferredIntent, analysis);
+  }
+
+  // 🧠 2. SI HAY DECISIÓN ABIERTA → EJECUTAR
   if (isDecisionOpen() && target?.action === 'execute') {
     return executeWithBrain(text, target);
   }
 
+  // 🧠 3. SI NO ESTÁ CLARO → SEGUIR PREGUNTANDO
   if (shouldAsk(inferredIntent, text)) {
     return makeDecisionResponse(text, inferredIntent, analysis);
   }
 
-  if (target?.action === 'execute') {
+  // 🧠 4. SOLO EJECUTAR SI VIENE DE DECISIÓN
+  if (target?.action === 'execute' && ctx.lastAction === 'decision') {
     return executeWithBrain(text, target);
   }
 
   return processMessageInternal(text);
 }
-
 // ---------------- FLUJOS GUIADOS ----------------
 
 function welcomeResponse() {
