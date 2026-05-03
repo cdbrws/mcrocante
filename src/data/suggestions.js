@@ -1,9 +1,8 @@
 // src/data/suggestions.js
 // Base local/offline de sugerencias para Modo Crocante.
-// Combina contenido fijo + knowledge + contenido cargado desde el admin en src/utils/adminContent.js
+// Combina contenido fijo + contenido cargado desde el admin en src/utils/adminContent.js
 
 import { getActiveContent } from '../utils/adminContent';
-import { CROCANTE_KNOWLEDGE } from './knowledge';
 
 function normalize(text) {
   return String(text || '')
@@ -77,43 +76,6 @@ function mapAdminContentToSuggestion(item) {
     endsAt: item.endsAt || '',
     source: item.source || 'admin',
     priority: item.priority || 'normal',
-
-    // Campos extra para que la AIA pueda usar contenido más inteligente si existe.
-    ingredients: Array.isArray(item.ingredients) ? item.ingredients.map(i => normalize(i)).filter(Boolean) : [],
-    steps: Array.isArray(item.steps) ? item.steps : [],
-    tips: Array.isArray(item.tips) ? item.tips : [],
-    materials: Array.isArray(item.materials) ? item.materials : [],
-    duration: item.duration || '',
-    difficulty: item.difficulty || '',
-  };
-}
-
-function mapKnowledgeToSuggestion(item) {
-  const safeType = item.type || 'actividad';
-
-  return {
-    ...item,
-    id: item.id,
-    type: safeType,
-    category: item.category || safeType || 'general',
-    title: item.title || '',
-    description: item.description || '',
-    tags: normalizeTags(item.tags),
-    cost: item.cost || 'gratis',
-    location: item.location || 'San Luis',
-    mood: normalizeMood(item.mood),
-    source: 'knowledge',
-    featured: Boolean(item.featured),
-    active: item.active !== false,
-    priority: item.priority || 'normal',
-
-    // Normalizados útiles para búsquedas/match futuro.
-    ingredients: Array.isArray(item.ingredients) ? item.ingredients.map(i => normalize(i)).filter(Boolean) : [],
-    steps: Array.isArray(item.steps) ? item.steps : [],
-    tips: Array.isArray(item.tips) ? item.tips : [],
-    materials: Array.isArray(item.materials) ? item.materials : [],
-    duration: item.duration || '',
-    difficulty: item.difficulty || '',
   };
 }
 
@@ -122,16 +84,6 @@ function getAdminSuggestions() {
     return getActiveContent()
       .filter(item => item?.title)
       .map(mapAdminContentToSuggestion);
-  } catch {
-    return [];
-  }
-}
-
-function getKnowledgeSuggestions() {
-  try {
-    return CROCANTE_KNOWLEDGE
-      .filter(item => item?.id && item?.title)
-      .map(mapKnowledgeToSuggestion);
   } catch {
     return [];
   }
@@ -165,16 +117,11 @@ function scoreSuggestion(item, { category, mood, cost, normalizedQuery }) {
     item.category,
     item.type,
     item.location,
-    item.duration,
-    item.difficulty,
     ...(item.tags || []),
     ...(item.mood || []),
-    ...(item.ingredients || []),
-    ...(item.materials || []),
   ].join(' '));
 
   if (item.source === 'admin') score += 8;
-  if (item.source === 'knowledge') score += 5;
   if (item.featured) score += 6;
   if (item.sponsor) score += 4;
   if (item.priority === 'premium') score += 4;
@@ -235,7 +182,6 @@ function sortByPriority(items, filters = {}) {
 function getAllSuggestions() {
   return uniqueById([
     ...getAdminSuggestions(),
-    ...getKnowledgeSuggestions(),
     ...SUGGESTIONS_BASE,
   ]);
 }
@@ -478,7 +424,7 @@ export const SUGGESTIONS_BASE = [
 ];
 
 // Export compatible: deja funcionando imports existentes.
-// Ojo: esto es la base fija vieja. Para traer admin + knowledge + base usar getAllSuggestions().
+// Ojo: esto es la base fija. Para traer admin + base usar getAllSuggestions().
 export const SUGGESTIONS = SUGGESTIONS_BASE;
 
 export function getRandomSuggestions({
@@ -500,19 +446,7 @@ export function getRandomSuggestions({
     const itemTags = normalizeTags(item.tags);
     const itemMood = normalizeMood(item.mood);
     const itemCost = normalize(item.cost);
-    const haystack = normalize([
-      item.title,
-      item.description,
-      item.category,
-      item.type,
-      item.location,
-      item.duration,
-      item.difficulty,
-      ...(item.tags || []),
-      ...(item.mood || []),
-      ...(item.ingredients || []),
-      ...(item.materials || []),
-    ].join(' '));
+    const haystack = normalize(`${item.title} ${item.description} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
 
     const matchCategory = normalizedCategory
       ? itemCategory === normalizedCategory ||
@@ -529,7 +463,8 @@ export function getRandomSuggestions({
 
     const matchCost = normalizedCost
       ? itemCost === normalizedCost ||
-        itemTags.includes(normalizedCost)
+        itemTags.includes(normalizedCost) ||
+        haystack.includes(normalizedCost)
       : true;
 
     const matchQuery = normalizedQuery
@@ -540,55 +475,26 @@ export function getRandomSuggestions({
     return matchCategory && matchMood && matchCost && matchQuery;
   });
 
+  // Fallback inteligente:
+  // Si se pidió categoría específica, NO mezcla todo.
+  // Busca por tags/mood relacionados antes de caer en contenido general.
   if (pool.length === 0 && normalizedCategory) {
     pool = allSuggestions.filter((item) => {
-      const haystack = normalize([
-        item.title,
-        item.description,
-        item.category,
-        item.type,
-        item.location,
-        ...(item.tags || []),
-        ...(item.mood || []),
-        ...(item.ingredients || []),
-        ...(item.materials || []),
-      ].join(' '));
-
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
       return haystack.includes(normalizedCategory);
     });
   }
 
   if (pool.length === 0 && normalizedMood) {
     pool = allSuggestions.filter((item) => {
-      const haystack = normalize([
-        item.title,
-        item.description,
-        item.category,
-        item.type,
-        item.location,
-        ...(item.tags || []),
-        ...(item.mood || []),
-        ...(item.ingredients || []),
-        ...(item.materials || []),
-      ].join(' '));
-
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
       return haystack.includes(normalizedMood);
     });
   }
 
   if (pool.length === 0 && normalizedQuery) {
     pool = allSuggestions.filter((item) => {
-      const haystack = normalize([
-        item.title,
-        item.description,
-        item.category,
-        item.type,
-        item.location,
-        ...(item.tags || []),
-        ...(item.mood || []),
-        ...(item.ingredients || []),
-        ...(item.materials || []),
-      ].join(' '));
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
 
       return normalizedQuery
         .split(' ')
@@ -597,10 +503,11 @@ export function getRandomSuggestions({
     });
   }
 
+  // Último fallback: no tirar fruta total.
+  // Mejor devolver planes generales útiles, evitando mezclar demasiado si venía una intención fuerte.
   if (pool.length === 0) {
     pool = allSuggestions.filter(item =>
-      ['san-luis', 'aire-libre', 'comer-barato', 'juegos', 'modo-luchon', 'alta-fiaca', 'comida', 'receta', 'plan', 'juego', 'familia'].includes(normalize(item.category)) ||
-      ['san-luis', 'aire-libre', 'comer-barato', 'juegos', 'modo-luchon', 'alta-fiaca', 'comida', 'receta', 'plan', 'juego', 'familia'].includes(normalize(item.type))
+      ['san-luis', 'aire-libre', 'comer-barato', 'juegos', 'modo-luchon', 'alta-fiaca', 'comida'].includes(item.category)
     );
   }
 
@@ -622,19 +529,7 @@ export function searchSuggestions(query, limit = 10) {
 
   return sortByPriority(
     allSuggestions.filter((item) => {
-      const haystack = normalize([
-        item.title,
-        item.description,
-        item.category,
-        item.type,
-        item.location,
-        item.duration,
-        item.difficulty,
-        ...(item.tags || []),
-        ...(item.mood || []),
-        ...(item.ingredients || []),
-        ...(item.materials || []),
-      ].join(' '));
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
 
       return haystack.includes(normalizedQuery) ||
         normalizedQuery
