@@ -24,6 +24,14 @@ import {
   toggleDestacado,
   toggleSponsor
 } from '../utils/solicitudes';
+import {
+  getContent,
+  addContent,
+  updateContent,
+  deleteContent as deleteAdminContent,
+  toggleContentActive,
+  toggleContentFeatured
+} from '../utils/adminContent';
 import { DATA } from '../data/places';
 import { LOCALIDADES_SL } from '../data/localidades';
 import { RECETAS } from '../data/recetas';
@@ -412,6 +420,296 @@ function NegociosTab() {
   );
 }
 
+
+function ContenidoTab() {
+  const EMPTY_CONTENT = {
+    title: '',
+    description: '',
+    category: 'san-luis',
+    type: 'actividad',
+    mood: '',
+    tags: '',
+    location: 'San Luis',
+    imageUrl: '',
+    sponsorId: '',
+    sponsor: false,
+    featured: false,
+    active: true,
+    priority: 'normal',
+    startsAt: '',
+    endsAt: '',
+    notes: '',
+  };
+
+  const CATEGORIES = [
+    'san-luis',
+    'aire-libre',
+    'comer-barato',
+    'modo-luchon',
+    'juegos',
+    'alta-fiaca',
+    'amigos',
+    'comida',
+    'pelicula',
+    'musica',
+    'ejercicio',
+    'general',
+  ];
+
+  const TYPES = [
+    'actividad',
+    'evento',
+    'juego',
+    'receta',
+    'plan',
+    'challenge',
+    'lugar',
+    'promo',
+  ];
+
+  const [data, setData] = useState(getContent());
+  const [form, setForm] = useState(EMPTY_CONTENT);
+  const [filter, setFilter] = useState('todos');
+  const [editId, setEditId] = useState(null);
+  const [search, setSearch] = useState('');
+
+  const refresh = () => setData(getContent());
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const resetForm = () => {
+    setForm(EMPTY_CONTENT);
+    setEditId(null);
+  };
+
+  const save = () => {
+    if (!form.title.trim()) return;
+
+    const payload = {
+      ...form,
+      tags: parseTags(form.tags),
+      active: form.active !== false,
+      featured: Boolean(form.featured),
+      sponsor: Boolean(form.sponsor),
+    };
+
+    if (editId) {
+      updateContent(editId, payload);
+    } else {
+      addContent(payload);
+    }
+
+    resetForm();
+    refresh();
+  };
+
+  const startEdit = (item) => {
+    setEditId(item.id);
+    setForm({
+      title: item.title || '',
+      description: item.description || '',
+      category: item.category || 'general',
+      type: item.type || 'actividad',
+      mood: item.mood || '',
+      tags: normalizeTags(item.tags),
+      location: item.location || '',
+      imageUrl: item.imageUrl || '',
+      sponsorId: item.sponsorId || '',
+      sponsor: Boolean(item.sponsor),
+      featured: Boolean(item.featured),
+      active: item.active !== false,
+      priority: item.priority || 'normal',
+      startsAt: item.startsAt || '',
+      endsAt: item.endsAt || '',
+      notes: item.notes || '',
+    });
+  };
+
+  const filtered = data.filter(item => {
+    const matchesFilter = filter === 'todos'
+      ? true
+      : filter === 'activos'
+      ? item.active !== false
+      : filter === 'inactivos'
+      ? item.active === false
+      : filter === 'destacados'
+      ? item.featured
+      : filter === 'sponsors'
+      ? item.sponsor
+      : item.category === filter;
+
+    const q = search.trim().toLowerCase();
+    const matchesSearch = !q || [
+      item.title,
+      item.description,
+      item.category,
+      item.type,
+      item.mood,
+      item.location,
+      ...(item.tags || []),
+    ].join(' ').toLowerCase().includes(q);
+
+    return matchesFilter && matchesSearch;
+  });
+
+  const counts = {
+    total: data.length,
+    activos: data.filter(item => item.active !== false).length,
+    destacados: data.filter(item => item.featured).length,
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-gradient-to-r from-naranja to-orange-400 text-white rounded-2xl p-4 shadow-md">
+        <h3 className="text-sm font-bold mb-1">📦 Base AIA</h3>
+        <p className="text-xs opacity-90">Cargá planes, eventos, juegos, recetas y actividades. La AIA los usa desde suggestions.js.</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-white rounded-xl p-3 text-center border border-stone-100">
+          <div className="text-xl font-extrabold text-stone-800">{counts.total}</div>
+          <div className="text-[10px] text-stone-400">Total</div>
+        </div>
+        <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
+          <div className="text-xl font-extrabold text-green-700">{counts.activos}</div>
+          <div className="text-[10px] text-green-500">Activos</div>
+        </div>
+        <div className="bg-naranja/10 rounded-xl p-3 text-center border border-naranja/20">
+          <div className="text-xl font-extrabold text-naranja">{counts.destacados}</div>
+          <div className="text-[10px] text-naranja">Destacados</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-4 border border-stone-100 shadow-sm space-y-2">
+        <h3 className="font-bold text-sm text-stone-800">{editId ? 'Editar contenido' : 'Nuevo contenido AIA'}</h3>
+
+        <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none" placeholder="Título: Mate en el Parque de las Naciones" />
+
+        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" rows={3} placeholder="Descripción útil y corta" />
+
+        <div className="grid grid-cols-2 gap-2">
+          <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="border rounded-lg px-2 py-2 text-xs outline-none bg-white">
+            {CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
+          </select>
+
+          <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="border rounded-lg px-2 py-2 text-xs outline-none bg-white">
+            {TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </div>
+
+        <input value={form.mood} onChange={e => setForm({ ...form, mood: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none" placeholder="Mood: aire, familia, amigos, fiaca, sin-plata" />
+        <input value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none" placeholder="Tags: gratis, aire libre, amigos, evento" />
+        <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none" placeholder="Ubicación / zona" />
+        <input value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none" placeholder="URL imagen opcional" />
+
+        <div className="grid grid-cols-2 gap-2">
+          <input value={form.startsAt} onChange={e => setForm({ ...form, startsAt: e.target.value })} className="border rounded-lg px-3 py-2 text-xs outline-none" placeholder="Inicio evento opcional" />
+          <input value={form.endsAt} onChange={e => setForm({ ...form, endsAt: e.target.value })} className="border rounded-lg px-3 py-2 text-xs outline-none" placeholder="Fin evento opcional" />
+        </div>
+
+        <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-xs outline-none bg-white">
+          <option value="normal">Prioridad normal</option>
+          <option value="alta">Prioridad alta</option>
+          <option value="premium">Prioridad premium</option>
+        </select>
+
+        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" rows={2} placeholder="Notas internas" />
+
+        <div className="grid grid-cols-3 gap-2">
+          <button type="button" onClick={() => setForm({ ...form, active: !form.active })} className={`rounded-lg px-2 py-2 text-xs font-bold ${form.active ? 'bg-green-50 text-green-700' : 'bg-stone-100 text-stone-500'}`}>
+            {form.active ? 'Activo' : 'Inactivo'}
+          </button>
+
+          <button type="button" onClick={() => setForm({ ...form, featured: !form.featured })} className={`rounded-lg px-2 py-2 text-xs font-bold ${form.featured ? 'bg-naranja/10 text-naranja' : 'bg-stone-100 text-stone-500'}`}>
+            {form.featured ? 'Destacado' : 'No destacado'}
+          </button>
+
+          <button type="button" onClick={() => setForm({ ...form, sponsor: !form.sponsor })} className={`rounded-lg px-2 py-2 text-xs font-bold ${form.sponsor ? 'bg-purple-100 text-purple-700' : 'bg-stone-100 text-stone-500'}`}>
+            {form.sponsor ? 'Sponsor' : 'No sponsor'}
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={save} className="flex-1 bg-naranja text-white rounded-lg py-2 text-xs font-bold">
+            {editId ? 'Guardar cambios' : 'Cargar contenido'}
+          </button>
+          <button onClick={resetForm} className="px-4 bg-stone-100 rounded-lg py-2 text-xs font-bold">Cancelar</button>
+        </div>
+      </div>
+
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {['todos', 'activos', 'inactivos', 'destacados', 'sponsors', ...CATEGORIES].map(key => (
+          <button key={key} onClick={() => setFilter(key)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all ${filter === key ? 'bg-naranja text-white' : 'bg-white text-stone-500 border border-stone-200'}`}>
+            {key}
+          </button>
+        ))}
+      </div>
+
+      <input value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-white border border-stone-100 rounded-xl px-3 py-2 text-sm outline-none" placeholder="Buscar en Base AIA..." />
+
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl p-8 text-center border border-stone-100">
+          <div className="text-3xl mb-2">📭</div>
+          <p className="text-sm text-stone-400">No hay contenido en este filtro.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(item => (
+            <div key={item.id} className={`bg-white rounded-2xl border overflow-hidden ${item.featured ? 'border-naranja ring-1 ring-naranja/20' : 'border-stone-100'}`}>
+              {item.imageUrl && <img src={item.imageUrl} alt={item.title} className="w-full h-32 object-cover bg-stone-100" />}
+
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-sm text-stone-800 truncate">{item.title}</h4>
+                    <p className="text-xs text-stone-400">{item.category} · {item.type} · {item.location || 'sin ubicación'}</p>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${item.active !== false ? 'bg-green-50 text-green-700 border-green-200' : 'bg-stone-100 text-stone-500 border-stone-200'}`}>
+                    {item.active !== false ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-stone-500 mb-2 line-clamp-3">{item.description}</p>
+
+                {item.tags && item.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {item.tags.slice(0, 8).map(tag => (
+                      <span key={tag} className="text-[10px] bg-crema rounded-full px-2 py-0.5 text-stone-600 font-semibold">{tag}</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-1.5 flex-wrap mb-3">
+                  {item.sponsor && <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold">🔥 Sponsor</span>}
+                  {item.featured && <span className="text-[10px] px-2 py-0.5 rounded-full bg-naranja/10 text-naranja font-bold">⭐ Destacado</span>}
+                  {item.mood && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold">{item.mood}</span>}
+                  <span className="text-[10px] text-stone-300">{formatTime(item.createdAt)}</span>
+                </div>
+
+                <div className="flex gap-1.5 flex-wrap">
+                  <button onClick={() => { toggleContentActive(item.id); refresh(); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${item.active !== false ? 'bg-stone-100 text-stone-600' : 'bg-green-50 text-green-700'}`}>
+                    {item.active !== false ? 'Desactivar' : 'Activar'}
+                  </button>
+
+                  <button onClick={() => { toggleContentFeatured(item.id); refresh(); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${item.featured ? 'bg-stone-100 text-stone-600' : 'bg-naranja/10 text-naranja'}`}>
+                    {item.featured ? 'Quitar destacado' : 'Destacar'}
+                  </button>
+
+                  <button onClick={() => startEdit(item)} className="bg-stone-100 text-stone-600 rounded-lg px-3 py-1.5 text-[11px] font-bold">✏️ Editar</button>
+
+                  <button onClick={() => { if (confirm('¿Eliminar contenido de Base AIA?')) { deleteAdminContent(item.id); refresh(); if (editId === item.id) resetForm(); } }} className="bg-red-50 text-red-500 rounded-lg px-3 py-1.5 text-[11px] font-bold">🗑️</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPanel() {
   const [tab, setTab] = useState('dashboard');
   const [stats, setStats] = useState(getStats());
@@ -435,6 +733,7 @@ export default function AdminPanel() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'negocios', label: 'Negocios', icon: '🏪', badge: solCounts.pendientes },
+    { id: 'contenido', label: 'Base AIA', icon: '📦' },
     { id: 'aia', label: 'AIA', icon: '🧠' },
     { id: 'intents', label: 'Consultas', icon: '🔍' },
     { id: 'lugares', label: 'Lugares', icon: '📍' },
@@ -490,6 +789,8 @@ export default function AdminPanel() {
       )}
 
       {tab === 'negocios' && <NegociosTab />}
+
+      {tab === 'contenido' && <ContenidoTab />}
 
       {tab === 'aia' && (
         <div className="space-y-4">
