@@ -546,19 +546,26 @@ if (ctx.lastAction === 'clarifying' && ctx.lastIntent === 'COCINAR') {
   }
 
   // 🧠 2. SI HAY DECISIÓN ABIERTA → EJECUTAR
-  if (isDecisionOpen() && target?.action === 'execute') {
-    return executeWithBrain(text, target);
-  }
-
+if (
+  isDecisionOpen() &&
+  target?.action === 'execute' &&
+  ctx.lastAction === 'decision'
+) {
+  return executeWithBrain(text, target);
+}
   // 🧠 3. SI NO ESTÁ CLARO → SEGUIR PREGUNTANDO
   if (shouldAsk(inferredIntent, text)) {
     return makeDecisionResponse(text, inferredIntent, analysis);
   }
 
   // 🧠 4. SOLO EJECUTAR SI VIENE DE DECISIÓN
-  if (target?.action === 'execute' && ctx.lastAction === 'decision') {
-    return executeWithBrain(text, target);
-  }
+if (
+  target?.action === 'execute' &&
+  ctx.lastAction === 'decision' &&
+  ctx.lastOptions?.some(option => normalize(option) === normalize(text))
+) {
+  return executeWithBrain(text, target);
+}
 
   return processMessageInternal(text);
 }
