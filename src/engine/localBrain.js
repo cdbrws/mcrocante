@@ -1,5 +1,3 @@
-// src/engine/localBrain.js
-
 const STORAGE_KEY = 'mcrocante_brain_context';
 
 const DEFAULT_CONTEXT = {
@@ -281,20 +279,48 @@ export function getSmartOptions(intent = null) {
   return (optionsByIntent[intent] || ['Salir', 'Quedarme', 'Comer', 'Ver algo']).slice(0, 5);
 }
 
+/* 🔥 FIX CLAVE */
 export function shouldAsk(intent = null, message = '') {
   const text = normalizeText(message);
 
   if (!intent) return true;
 
-  const directExecutionIntents = ['COCINAR', 'COMPRAR', 'PELI', 'MUSICA', 'JUEGO'];
+  const directExecutionWords = [
+    'dame',
+    'mostrame',
+    'tirame',
+    'pasame',
+    'decime',
+    'quiero opciones',
+    'recomendame',
+    'elegi vos',
+    'resolve',
+    'resolver',
+    'ya fue',
+    'sin vueltas'
+  ];
 
-  if (directExecutionIntents.includes(intent)) return false;
+  const wantsDirect = directExecutionWords.some(word => text.includes(word));
 
-  if (['SIN_PLATA', 'LLUVIA', 'ABURRIDO', 'COMER'].includes(intent)) return true;
+  if (wantsDirect) return false;
 
-  if (text.length <= 14) return true;
+  const ctx = getContext();
 
-  return false;
+  if (!ctx.lastAction) return true;
+
+  const alwaysClarifyIntents = [
+    'COMER',
+    'SIN_PLATA',
+    'ABURRIDO',
+    'CASA',
+    'SALIR'
+  ];
+
+  if (alwaysClarifyIntents.includes(intent)) return true;
+
+  if (text.length <= 18) return true;
+
+  return true;
 }
 
 export function getVariantResponse(intent = null, sentiment = 'neutral') {
