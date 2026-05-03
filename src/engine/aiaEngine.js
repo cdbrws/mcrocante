@@ -502,8 +502,6 @@ function recipeFromIngredientsResponse(text) {
     category: 'comida',
   };
 }
-  return processMessageInternal(text);
-}
 
 function processMessageWithBrain(text) {
   const analysis = analyzeMessage(text);
