@@ -379,10 +379,22 @@ function executeWithBrain(text, target) {
     });
   }
 
-  if (target?.intent === 'COCINAR') {
-    return recipeOptionsResponse();
-  }
+if (target?.intent === 'COCINAR') {
+  updateContext({
+    intent: 'COCINAR',
+    category: 'comida',
+    action: 'clarifying',
+    options: ['Arroz', 'Fideos', 'Harina', 'Papa', 'Escribo lo que tengo'],
+  });
 
+  return {
+    text: 'Bien. ¿Qué tenés en casa? Podés escribirlo.',
+    results: [],
+    suggestions: ['Arroz', 'Fideos', 'Harina', 'Papa', 'Escribo lo que tengo'],
+    intent: 'cocinar-clarify',
+    category: 'comida',
+  };
+}
   if (target?.intent === 'PELI') {
     return movieOptionsResponse();
   }
@@ -414,10 +426,73 @@ function executeWithBrain(text, target) {
       suggestions: ['Otra idea', 'Algo en casa', 'Comer barato', 'Aire libre'],
     });
   }
+function recipeFromIngredientsResponse(text) {
+  const normalized = normalize(text);
+  const ingredients = normalized.split(' ').filter(Boolean);
 
+  const recipes = getRecetasArray();
+
+  const scored = recipes
+    .map((recipe) => {
+      const haystack = normalize([
+        getRecipeName(recipe),
+        recipe?.descripcion,
+        recipe?.description,
+        recipe?.tip,
+        ...(recipe?.ingredientes || []),
+        ...(recipe?.tags || []),
+      ].join(' '));
+
+      const score = ingredients.reduce((acc, ing) => {
+        return haystack.includes(ing) ? acc + 1 : acc;
+      }, 0);
+
+      return { recipe, score };
+    })
+    .filter(r => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  if (!scored.length) {
+    return {
+      text: 'Con eso no encontré una receta clara. Probá con algo como arroz, huevo, papa o harina.',
+      results: [],
+      suggestions: ['Arroz', 'Fideos', 'Harina', 'Papa'],
+      intent: 'cocinar-clarify',
+      category: 'comida',
+    };
+  }
+
+  let textResp = 'Con eso, podés hacer:\n\n';
+
+  scored.forEach(({ recipe }, index) => {
+    textResp += `${index + 1}. **${getRecipeName(recipe)}** — ${getRecipeTip(recipe)}\n`;
+  });
+
+  textResp += '\n¿Querés que te diga cómo hacer una?';
+
+  updateContext({
+    intent: 'COCINAR',
+    category: 'comida',
+    action: 'execute',
+    options: scored.map(r => getRecipeName(r.recipe)),
+  });
+
+  return {
+    text: textResp,
+    results: [],
+    suggestions: scored.map(r => getRecipeName(r.recipe)),
+    intent: 'receta-por-ingredientes',
+    category: 'comida',
+  };
+}
   return processMessageInternal(text);
 }
+const ctx = getContext();
 
+if (ctx.lastAction === 'clarifying' && ctx.lastIntent === 'COCINAR') {
+  return recipeFromIngredientsResponse(text);
+}
 function processMessageWithBrain(text) {
   const analysis = analyzeMessage(text);
   const inferredIntent = inferIntentFromContext(analysis.intent, text);
