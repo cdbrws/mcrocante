@@ -535,6 +535,28 @@ function processMessageWithBrain(text) {
 const ctx = getContext();
 
 if (ctx.lastAction === 'clarifying' && ctx.lastIntent === 'COCINAR') {
+  const normalized = normalize(text);
+
+  if (
+    normalized.includes('peli') ||
+    normalized.includes('pelicula') ||
+    normalized.includes('película') ||
+    normalized.includes('musica') ||
+    normalized.includes('música') ||
+    normalized.includes('juego') ||
+    normalized.includes('salir') ||
+    normalized.includes('casa')
+  ) {
+    updateContext({
+      intent: null,
+      category: null,
+      action: 'decision',
+      options: [],
+    });
+
+    return processMessageInternal(text);
+  }
+
   return recipeFromIngredientsResponse(text);
 }
   
