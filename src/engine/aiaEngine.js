@@ -985,13 +985,29 @@ function buildResponseFromSuggestions({
   appendBusinesses = false,
   suggestions = ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a", "Aire libre"],
 }) {
-  const raw = getIntentSuggestions({
-    category,
-    mood,
-    query: input,
-    limit: 8,
-  });
+  let raw = getIntentSuggestions({
+  category,
+  mood,
+  query: input,
+  limit: 8,
+});
 
+// 🧠 FILTRO INTELIGENTE POR CONTEXTO
+const normalized = normalize(input);
+
+if (normalized.includes('comer') || normalized.includes('cocinar')) {
+  raw = raw.filter(item =>
+    normalize(item.category || '').includes('comida') ||
+    normalize(item.tags?.join(' ') || '').includes('comida')
+  );
+}
+
+if (normalized.includes('casa')) {
+  raw = raw.filter(item =>
+    normalize(item.location || '').includes('casa') ||
+    normalize(item.tags?.join(' ') || '').includes('casa')
+  );
+}
   let items = raw
     .filter((item) => !lastSuggestions.includes(item.id))
     .slice(0, limit);
