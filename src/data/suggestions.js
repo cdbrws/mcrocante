@@ -3,7 +3,7 @@
 // Combina contenido fijo + contenido cargado desde el admin en src/utils/adminContent.js
 
 import { getActiveContent } from '../utils/adminContent';
-
+import { CROCANTE_KNOWLEDGE } from './knowledge/index.js';
 function normalize(text) {
   return String(text || '')
     .toLowerCase()
@@ -179,9 +179,45 @@ function sortByPriority(items, filters = {}) {
     .map(row => row.item);
 }
 
+function mapKnowledgeToSuggestion(item) {
+  return {
+    id: item.id,
+    type: item.type || 'actividad',
+    category: item.category || item.type || 'general',
+    title: item.title || '',
+    description: item.description || '',
+    tags: normalizeTags([
+      ...(item.tags || []),
+      ...(item.context || []),
+      ...(item.ingredients || []),
+      item.difficulty || '',
+    ]),
+    cost: item.cost || 'bajo',
+    location: item.location || 'San Luis',
+    mood: normalizeMood(item.context || []),
+    ingredients: item.ingredients || [],
+    steps: item.steps || [],
+    difficulty: item.difficulty || '',
+    source: 'knowledge',
+    featured: Boolean(item.featured),
+    active: item.active !== false,
+  };
+}
+
+function getKnowledgeSuggestions() {
+  try {
+    return CROCANTE_KNOWLEDGE
+      .filter(item => item?.title)
+      .map(mapKnowledgeToSuggestion);
+  } catch {
+    return [];
+  }
+}
+
 function getAllSuggestions() {
   return uniqueById([
     ...getAdminSuggestions(),
+    ...getKnowledgeSuggestions(),
     ...SUGGESTIONS_BASE,
   ]);
 }
