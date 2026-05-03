@@ -333,8 +333,3 @@ export const FAMILY_KIDS_KNOWLEDGE = [
     materials: ["pan o frutas o lo disponible"]
   }
 ];
-```agext
-Después acordate de sumar en `knowledge/index.js`:
-
-```js
-import { FAMILY_KIDS_KNOWLEDGE } from './familyKidsKnowledge';
