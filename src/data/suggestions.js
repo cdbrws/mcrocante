@@ -1,9 +1,8 @@
 // src/data/suggestions.js
 // Base local/offline de sugerencias para Modo Crocante.
-// Combina contenido fijo + knowledge local + contenido cargado desde admin.
+// Combina contenido fijo + contenido cargado desde el admin en src/utils/adminContent.js
 
-import { getActiveContent } from '../utils/adminContent.js';
-import { CROCANTE_KNOWLEDGE } from './knowledge/index.js';
+import { getActiveContent } from '../utils/adminContent';
 
 function normalize(text) {
   return String(text || '')
@@ -37,13 +36,7 @@ function normalizeMood(mood) {
     .filter(Boolean);
 }
 
-function normalizeArray(value) {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (!value) return [];
-  return [value];
-}
-
-function createItems(prefix, items, defaults = {}) {
+function createItems(prefix, items, defaults) {
   return items.map((item, index) => {
     const data = typeof item === 'string' ? { title: item } : item;
 
@@ -53,16 +46,10 @@ function createItems(prefix, items, defaults = {}) {
       category: data.category || defaults.category || 'general',
       title: data.title || '',
       description: data.description || defaults.description || '',
-      tags: normalizeTags([
-        ...(defaults.tags || []),
-        ...(data.tags || []),
-      ]),
+      tags: normalizeTags([...(defaults.tags || []), ...(data.tags || [])]),
       cost: data.cost || defaults.cost || 'bajo',
       location: data.location || defaults.location || 'Argentina',
-      mood: normalizeMood([
-        ...(defaults.mood || []),
-        ...(data.mood || []),
-      ]),
+      mood: normalizeMood([...(defaults.mood || []), ...(data.mood || [])]),
       source: 'base',
       featured: Boolean(data.featured),
       active: true,
@@ -70,40 +57,7 @@ function createItems(prefix, items, defaults = {}) {
   });
 }
 
-function mapKnowledgeToSuggestion(item = {}) {
-  const context = normalizeArray(item.context);
-  const ingredients = normalizeArray(item.ingredients);
-  const steps = normalizeArray(item.steps);
-
-  return {
-    id: item.id || `knowledge_${normalize(item.title).replace(/\s+/g, '_')}`,
-    type: item.type || 'actividad',
-    category: item.category || item.type || 'general',
-    title: item.title || '',
-    description: item.description || '',
-    tags: normalizeTags([
-      ...(item.tags || []),
-      ...context,
-      ...ingredients,
-      item.difficulty,
-    ]),
-    cost: item.cost || 'bajo',
-    location: item.location || 'Argentina',
-    mood: normalizeMood([
-      ...(item.mood || []),
-      ...context,
-    ]),
-    ingredients,
-    steps,
-    difficulty: item.difficulty || '',
-    source: 'knowledge',
-    featured: Boolean(item.featured),
-    active: item.active !== false,
-    priority: item.priority || 'normal',
-  };
-}
-
-function mapAdminContentToSuggestion(item = {}) {
+function mapAdminContentToSuggestion(item) {
   return {
     id: item.id,
     type: item.type || 'actividad',
@@ -135,16 +89,6 @@ function getAdminSuggestions() {
   }
 }
 
-function getKnowledgeSuggestions() {
-  try {
-    return CROCANTE_KNOWLEDGE
-      .filter(item => item?.title)
-      .map(mapKnowledgeToSuggestion);
-  } catch {
-    return [];
-  }
-}
-
 function uniqueById(items) {
   const seen = new Set();
 
@@ -159,21 +103,6 @@ function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
-function buildHaystack(item = {}) {
-  return normalize([
-    item.title,
-    item.description,
-    item.category,
-    item.type,
-    item.location,
-    item.difficulty,
-    ...(item.tags || []),
-    ...(item.mood || []),
-    ...(item.ingredients || []),
-    ...(item.steps || []),
-  ].join(' '));
-}
-
 function scoreSuggestion(item, { category, mood, cost, normalizedQuery }) {
   let score = 0;
 
@@ -182,12 +111,17 @@ function scoreSuggestion(item, { category, mood, cost, normalizedQuery }) {
   const itemTags = normalizeTags(item.tags);
   const itemMood = normalizeMood(item.mood);
   const itemCost = normalize(item.cost);
-  const haystack = buildHaystack(item);
+  const haystack = normalize([
+    item.title,
+    item.description,
+    item.category,
+    item.type,
+    item.location,
+    ...(item.tags || []),
+    ...(item.mood || []),
+  ].join(' '));
 
-  if (item.source === 'admin') score += 10;
-  if (item.source === 'knowledge') score += 6;
-  if (item.source === 'base') score += 4;
-
+  if (item.source === 'admin') score += 8;
   if (item.featured) score += 6;
   if (item.sponsor) score += 4;
   if (item.priority === 'premium') score += 4;
@@ -217,13 +151,14 @@ function scoreSuggestion(item, { category, mood, cost, normalizedQuery }) {
   if (normalizedQuery) {
     if (haystack.includes(normalizedQuery)) score += 10;
 
-    normalizedQuery
+    const words = normalizedQuery
       .split(' ')
       .map(w => w.trim())
-      .filter(w => w.length >= 3)
-      .forEach(word => {
-        if (haystack.includes(word)) score += 2;
-      });
+      .filter(w => w.length >= 3);
+
+    words.forEach(word => {
+      if (haystack.includes(word)) score += 2;
+    });
   }
 
   return score;
@@ -247,13 +182,12 @@ function sortByPriority(items, filters = {}) {
 function getAllSuggestions() {
   return uniqueById([
     ...getAdminSuggestions(),
-    ...getKnowledgeSuggestions(),
     ...SUGGESTIONS_BASE,
-  ]).filter(item => item.active !== false);
+  ]);
 }
 
 /* =========================
-   CATEGORÍAS BASE
+   CATEGORÍAS CLAVE
 ========================= */
 
 const modoLuchon = createItems(
@@ -447,6 +381,10 @@ const aireLibre = createItems(
   }
 );
 
+/* =========================
+   EXISTENTE
+========================= */
+
 const recetas = createItems(
   'receta',
   [
@@ -486,7 +424,7 @@ export const SUGGESTIONS_BASE = [
 ];
 
 // Export compatible: deja funcionando imports existentes.
-// Ojo: esto es la base fija. Para traer admin + base + knowledge usar getRandomSuggestions/searchSuggestions.
+// Ojo: esto es la base fija. Para traer admin + base usar getAllSuggestions().
 export const SUGGESTIONS = SUGGESTIONS_BASE;
 
 export function getRandomSuggestions({
@@ -497,7 +435,6 @@ export function getRandomSuggestions({
   limit = 5,
 } = {}) {
   const allSuggestions = getAllSuggestions();
-
   const normalizedQuery = normalize(query);
   const normalizedCategory = normalize(category);
   const normalizedMood = normalize(mood);
@@ -509,7 +446,7 @@ export function getRandomSuggestions({
     const itemTags = normalizeTags(item.tags);
     const itemMood = normalizeMood(item.mood);
     const itemCost = normalize(item.cost);
-    const haystack = buildHaystack(item);
+    const haystack = normalize(`${item.title} ${item.description} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
 
     const matchCategory = normalizedCategory
       ? itemCategory === normalizedCategory ||
@@ -526,37 +463,38 @@ export function getRandomSuggestions({
 
     const matchCost = normalizedCost
       ? itemCost === normalizedCost ||
-        itemTags.includes(normalizedCost)
+        itemTags.includes(normalizedCost) ||
+        haystack.includes(normalizedCost)
       : true;
 
     const matchQuery = normalizedQuery
       ? haystack.includes(normalizedQuery) ||
-        normalizedQuery
-          .split(' ')
-          .filter(word => word.length >= 3)
-          .some(word => haystack.includes(word))
+        normalizedQuery.split(' ').some(word => word.length >= 3 && haystack.includes(word))
       : true;
 
     return matchCategory && matchMood && matchCost && matchQuery;
   });
 
+  // Fallback inteligente:
+  // Si se pidió categoría específica, NO mezcla todo.
+  // Busca por tags/mood relacionados antes de caer en contenido general.
   if (pool.length === 0 && normalizedCategory) {
     pool = allSuggestions.filter((item) => {
-      const haystack = buildHaystack(item);
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
       return haystack.includes(normalizedCategory);
     });
   }
 
   if (pool.length === 0 && normalizedMood) {
     pool = allSuggestions.filter((item) => {
-      const haystack = buildHaystack(item);
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
       return haystack.includes(normalizedMood);
     });
   }
 
   if (pool.length === 0 && normalizedQuery) {
     pool = allSuggestions.filter((item) => {
-      const haystack = buildHaystack(item);
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
 
       return normalizedQuery
         .split(' ')
@@ -565,18 +503,11 @@ export function getRandomSuggestions({
     });
   }
 
+  // Último fallback: no tirar fruta total.
+  // Mejor devolver planes generales útiles, evitando mezclar demasiado si venía una intención fuerte.
   if (pool.length === 0) {
     pool = allSuggestions.filter(item =>
-      [
-        'san-luis',
-        'aire-libre',
-        'comer-barato',
-        'juegos',
-        'modo-luchon',
-        'alta-fiaca',
-        'comida',
-        'receta',
-      ].includes(normalize(item.category))
+      ['san-luis', 'aire-libre', 'comer-barato', 'juegos', 'modo-luchon', 'alta-fiaca', 'comida'].includes(item.category)
     );
   }
 
@@ -598,7 +529,7 @@ export function searchSuggestions(query, limit = 10) {
 
   return sortByPriority(
     allSuggestions.filter((item) => {
-      const haystack = buildHaystack(item);
+      const haystack = normalize(`${item.title} ${item.description} ${item.category} ${item.type} ${item.location} ${item.tags.join(' ')} ${item.mood.join(' ')}`);
 
       return haystack.includes(normalizedQuery) ||
         normalizedQuery
