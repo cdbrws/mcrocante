@@ -427,8 +427,11 @@ function executeWithBrain(text, target) {
       suggestions: ['Otra idea', 'Algo en casa', 'Comer barato', 'Aire libre'],
     });
   }
+
+  // 🔴 ESTE ES EL ÚNICO RETURN FINAL
   return processMessageInternal(text);
 }
+
 function recipeFromIngredientsResponse(text) {
   const normalized = normalize(text || '');
   const ingredients = normalized.split(' ').filter(Boolean);
