@@ -488,11 +488,7 @@ function recipeFromIngredientsResponse(text) {
 }
   return processMessageInternal(text);
 }
-const ctx = getContext();
 
-if (ctx.lastAction === 'clarifying' && ctx.lastIntent === 'COCINAR') {
-  return recipeFromIngredientsResponse(text);
-}
 function processMessageWithBrain(text) {
   const analysis = analyzeMessage(text);
   const inferredIntent = inferIntentFromContext(analysis.intent, text);
@@ -506,8 +502,12 @@ function processMessageWithBrain(text) {
   if (directSelectedDetail) {
     return processMessageInternal(text);
   }
+const ctx = getContext();
 
-  const ctx = getContext();
+if (ctx.lastAction === 'clarifying' && ctx.lastIntent === 'COCINAR') {
+  return recipeFromIngredientsResponse(text);
+}
+  
   const isFirstInteraction = !ctx.lastAction;
 
   // 🧠 1. PRIMER MENSAJE → SIEMPRE PREGUNTA
