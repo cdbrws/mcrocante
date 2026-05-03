@@ -985,28 +985,105 @@ function buildResponseFromSuggestions({
   appendBusinesses = false,
   suggestions = ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a", "Aire libre"],
 }) {
-  let raw = getIntentSuggestions({
+let raw = getIntentSuggestions({
   category,
   mood,
   query: input,
   limit: 8,
 });
 
-// 🧠 FILTRO INTELIGENTE POR CONTEXTO
-const normalized = normalize(input);
+const normalizedInput = normalize(input);
 
-if (normalized.includes('comer') || normalized.includes('cocinar')) {
+function itemHas(item, words = []) {
+  const haystack = normalize([
+    item?.title,
+    item?.description,
+    item?.category,
+    item?.mood,
+    item?.location,
+    ...(item?.tags || []),
+  ].join(' '));
+
+  return words.some(word => haystack.includes(normalize(word)));
+}
+
+// Comer / cocinar → solo comida o recetas
+if (
+  normalizedInput.includes('comer') ||
+  normalizedInput.includes('cocinar') ||
+  normalizedInput.includes('hambre') ||
+  normalizedInput.includes('receta')
+) {
   raw = raw.filter(item =>
-    normalize(item.category || '').includes('comida') ||
-    normalize(item.tags?.join(' ') || '').includes('comida')
+    itemHas(item, ['comida', 'receta', 'cocina', 'comer', 'almuerzo', 'cena', 'merienda'])
   );
 }
 
-if (normalized.includes('casa')) {
+// Casa → solo planes de casa
+if (
+  normalizedInput.includes('casa') ||
+  normalizedInput.includes('adentro') ||
+  normalizedInput.includes('quedarme')
+) {
   raw = raw.filter(item =>
-    normalize(item.location || '').includes('casa') ||
-    normalize(item.tags?.join(' ') || '').includes('casa')
+    itemHas(item, ['casa', 'adentro', 'sillon', 'sillón', 'hogar'])
   );
+}
+
+// Aire libre / salir → solo planes afuera
+if (
+  normalizedInput.includes('salir') ||
+  normalizedInput.includes('calle') ||
+  normalizedInput.includes('afuera') ||
+  normalizedInput.includes('aire libre') ||
+  normalizedInput.includes('plaza')
+) {
+  raw = raw.filter(item =>
+    itemHas(item, ['aire libre', 'afuera', 'plaza', 'salida', 'caminar', 'paseo'])
+  );
+}
+
+// Chicos / familia
+if (
+  normalizedInput.includes('chicos') ||
+  normalizedInput.includes('niños') ||
+  normalizedInput.includes('ninos') ||
+  normalizedInput.includes('familia')
+) {
+  raw = raw.filter(item =>
+    itemHas(item, ['chicos', 'niños', 'ninos', 'familia', 'infantil'])
+  );
+}
+
+// Amigos
+if (
+  normalizedInput.includes('amigos') ||
+  normalizedInput.includes('juntada') ||
+  normalizedInput.includes('grupo')
+) {
+  raw = raw.filter(item =>
+    itemHas(item, ['amigos', 'juntada', 'grupo'])
+  );
+}
+
+// Pareja
+if (
+  normalizedInput.includes('pareja') ||
+  normalizedInput.includes('de a dos')
+) {
+  raw = raw.filter(item =>
+    itemHas(item, ['pareja', 'de a dos', 'cita'])
+  );
+}
+
+// Si el filtro dejó todo vacío, volvemos al resultado original
+if (!raw.length) {
+  raw = getIntentSuggestions({
+    category,
+    mood,
+    query: input,
+    limit: 8,
+  });
 }
   let items = raw
     .filter((item) => !lastSuggestions.includes(item.id))
