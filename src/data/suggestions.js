@@ -2,7 +2,7 @@
 // Base local/offline de sugerencias para Modo Crocante.
 // Combina contenido fijo + contenido cargado desde el admin en src/utils/adminContent.js
 
-import { getActiveContent } from '../utils/adminContent';
+import { getActiveContent } from '../utils/adminContent.js';
 import { CROCANTE_KNOWLEDGE } from './knowledge/index.js';
 function normalize(text) {
   return String(text || '')
