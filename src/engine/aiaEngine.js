@@ -6,6 +6,19 @@ import { getRandomSuggestions } from '../data/suggestions';
 import { getNegociosAprobados } from '../utils/solicitudes';
 import { trackChat } from '../utils/adminStats';
 
+import {
+  analyzeMessage,
+  inferIntentFromContext,
+  getSmartOptions,
+  shouldAsk,
+  getVariantResponse,
+  updateContext,
+  getContext,
+  mapIntentToCategory,
+  resolveUserChoice,
+  shouldShowBusiness,
+} from './localBrain';
+
 // ---------------- UTIL ----------------
 
 function pickRandom(arr) {
@@ -99,7 +112,7 @@ function businessMatchesTags(business, keywords = []) {
     business?.desc,
     business?.descripcion,
     business?.description,
-    ...(business?.tags || [])
+    ...(business?.tags || []),
   ].join(' '));
 
   return keywords.some((keyword) => haystack.includes(normalize(keyword)));
@@ -118,6 +131,7 @@ function getBusinessKeywordsByIntent(intentLabel) {
     salir: ['salida', 'comida', 'bar', 'cafe', 'helado', 'actividad', 'evento', 'paseo'],
     pareja: ['cafe', 'bar', 'helado', 'comida', 'salida', 'pareja'],
     noche: ['bar', 'comida', 'pizza', 'lomo', 'hamburguesa', 'noche'],
+    negocios: ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'local', 'comercio', 'promo'],
   };
 
   return map[intentLabel] || [];
@@ -177,7 +191,9 @@ function getApprovedBusinessesForIntent(intentLabel, limit = 3) {
 function appendBusinessBlock(text, intentLabel) {
   const businesses = getApprovedBusinessesForIntent(intentLabel, 3);
 
-  if (!businesses.length) return text;
+  if (!businesses.length) {
+    return `${text}\n\nNo tengo negocios cargados para eso todavía.`;
+  }
 
   let next = `${text}\n\nNegocios locales que podrían servirte:\n`;
 
@@ -188,8 +204,6 @@ function appendBusinessBlock(text, intentLabel) {
     if (zone) next += ` (${zone})`;
     next += '\n';
   });
-
-  next += '\nDato crocante: los sponsors/destacados aparecen mejor si están bien tagueados. Sin humo.';
 
   return next;
 }
@@ -202,6 +216,236 @@ function safeTrackUserChat(input, response) {
 
 // memoria simple anti-repetición
 let lastSuggestions = [];
+
+// ---------------- LOCAL BRAIN BRIDGE ----------------
+
+function isDecisionOpen() {
+  const ctx = getContext();
+  return ctx?.lastAction === 'decision' && Array.isArray(ctx?.lastOptions) && ctx.lastOptions.length > 0;
+}
+
+function makeDecisionResponse(text, intent, analysis) {
+  const options = getSmartOptions(intent);
+  const category = mapIntentToCategory(intent);
+
+  updateContext({
+    intent,
+    category,
+    action: 'decision',
+    options,
+  });
+
+  const intro = getVariantResponse(intent, analysis?.sentiment);
+  const questionMap = {
+    SALUDO: '¿Qué querés resolver?',
+    COMER: '¿Cocinamos algo o compramos?',
+    SIN_PLATA: '¿Qué querés resolver?',
+    LLUVIA: '¿Qué te pinta?',
+    ABURRIDO: '¿Para dónde vamos?',
+    CASA: '¿Qué tipo de plan querés?',
+    SALIR: '¿Qué salida buscamos?',
+  };
+
+  return {
+    text: `${intro}\n${questionMap[intent] || '¿Lo pensamos como plan, comida o salida?'}`,
+    results: [],
+    suggestions: options,
+    intent: intent || 'decision',
+    category: category || 'decision',
+  };
+}
+
+function resolveExecutionTarget(text, inferredIntent) {
+  const normalized = normalize(text);
+  const choice = resolveUserChoice(text);
+
+  if (choice?.action === 'execute' && choice?.intent) {
+    return choice;
+  }
+
+  if (hasAny(normalized, ['comer barato', 'barato', 'algo barato', 'morfar barato'])) {
+    return {
+      intent: 'COMER_BARATO',
+      category: 'comer-barato',
+      label: 'comer-barato',
+      mood: 'sin-plata',
+      action: 'execute',
+    };
+  }
+
+  if (hasAny(normalized, ['con amigos', 'amigos', 'juntada'])) {
+    return {
+      intent: 'AMIGOS',
+      category: 'amigos',
+      label: 'amigos',
+      mood: 'amigos',
+      action: 'execute',
+    };
+  }
+
+  if (hasAny(normalized, ['con chicos', 'chicos', 'familia', 'niños', 'ninos'])) {
+    return {
+      intent: 'FAMILIA',
+      category: 'modo-luchon',
+      label: 'modo-luchon',
+      mood: 'familia',
+      action: 'execute',
+    };
+  }
+
+  if (hasAny(normalized, ['gratis', 'salir gratis', 'plan gratis', 'aire libre', 'plaza'])) {
+    return {
+      intent: 'SALIR',
+      category: 'aire-libre',
+      label: 'aire-libre',
+      mood: 'aire',
+      action: 'execute',
+    };
+  }
+
+  if (inferredIntent === 'COCINAR') {
+    return {
+      intent: 'COCINAR',
+      category: 'comida',
+      label: 'comida',
+      action: 'execute',
+    };
+  }
+
+  if (inferredIntent === 'COMPRAR') {
+    return {
+      intent: 'COMPRAR',
+      category: 'comer-barato',
+      label: 'comer-barato',
+      mood: 'sin-plata',
+      action: 'execute',
+    };
+  }
+
+  if (inferredIntent === 'PELI') {
+    return {
+      intent: 'PELI',
+      category: 'pelicula',
+      label: 'pelicula',
+      action: 'execute',
+    };
+  }
+
+  if (inferredIntent === 'MUSICA') {
+    return {
+      intent: 'MUSICA',
+      category: 'musica',
+      label: 'musica',
+      action: 'execute',
+    };
+  }
+
+  if (inferredIntent === 'JUEGO') {
+    return {
+      intent: 'JUEGO',
+      category: 'juegos',
+      label: 'juegos',
+      action: 'execute',
+    };
+  }
+
+  return {
+    intent: inferredIntent,
+    category: mapIntentToCategory(inferredIntent),
+    label: null,
+    action: 'decision',
+  };
+}
+
+function executeWithBrain(text, target) {
+  const normalized = normalize(text);
+
+  updateContext({
+    intent: target?.intent,
+    category: target?.category,
+    action: 'execute',
+    options: [],
+  });
+
+  if (target?.intent === 'COMPRAR' || shouldShowBusiness(target?.intent, text)) {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: target?.category || 'comer-barato',
+      mood: target?.mood || 'sin-plata',
+      label: target?.label || 'comer-barato',
+      intro: 'Listo. Si la idea es comprar, acá sí miro negocios locales:\n\n',
+      appendBusinesses: true,
+      suggestions: ['Otra opción', 'Cocinar algo', 'Algo gratis', 'Algo en casa'],
+    });
+  }
+
+  if (target?.intent === 'COCINAR') {
+    return recipeOptionsResponse();
+  }
+
+  if (target?.intent === 'PELI') {
+    return movieOptionsResponse();
+  }
+
+  if (target?.intent === 'MUSICA') {
+    return musicOptionsResponse();
+  }
+
+  if (target?.intent === 'JUEGO') {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: 'juegos',
+      mood: null,
+      label: 'juegos',
+      intro: 'Vamos con juegos simples, baratos y sin vueltas:\n\n',
+      appendBusinesses: false,
+      suggestions: ['Otro juego', 'Modo luchón/a', 'Algo en casa', 'Con amigos'],
+    });
+  }
+
+  if (target?.category) {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: target.category,
+      mood: target.mood || null,
+      label: target.label || target.category,
+      intro: buildIntentIntro(target.label || target.category, normalized),
+      appendBusinesses: false,
+      suggestions: ['Otra idea', 'Algo en casa', 'Comer barato', 'Aire libre'],
+    });
+  }
+
+  return processMessageInternal(text);
+}
+
+function processMessageWithBrain(text) {
+  const analysis = analyzeMessage(text);
+  const inferredIntent = inferIntentFromContext(analysis.intent, text);
+  const target = resolveExecutionTarget(text, inferredIntent);
+
+  const directSelectedDetail =
+    findRecipeByText(text) ||
+    findMovieByText(text) ||
+    findBandByText(text);
+
+  if (directSelectedDetail) {
+    return processMessageInternal(text);
+  }
+
+  if (isDecisionOpen() && target?.action === 'execute') {
+    return executeWithBrain(text, target);
+  }
+
+  if (shouldAsk(inferredIntent, text)) {
+    return makeDecisionResponse(text, inferredIntent, analysis);
+  }
+
+  if (target?.action === 'execute') {
+    return executeWithBrain(text, target);
+  }
+
+  return processMessageInternal(text);
+}
 
 // ---------------- FLUJOS GUIADOS ----------------
 
@@ -653,7 +897,7 @@ function buildResponseFromSuggestions({
   label,
   intro,
   limit = 3,
-  appendBusinesses = true,
+  appendBusinesses = false,
   suggestions = ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a", "Aire libre"],
 }) {
   const raw = getIntentSuggestions({
@@ -731,6 +975,7 @@ function buildLocalSuggestions(text) {
     mood,
     label,
     intro: buildIntentIntro(label, normalized),
+    appendBusinesses: false,
   });
 }
 
@@ -801,6 +1046,7 @@ function processMessageInternal(text) {
       mood: 'aire',
       label: 'aire-libre',
       intro: buildIntentIntro('aire-libre', normalized),
+      appendBusinesses: false,
       suggestions: ["Otra salida", "Gratis", "Con amigos", "Con chicos", "Comer barato"],
     });
   }
@@ -812,6 +1058,7 @@ function processMessageInternal(text) {
       mood: 'aire',
       label: 'san-luis',
       intro: buildIntentIntro('san-luis', normalized),
+      appendBusinesses: false,
       suggestions: ["Aire libre", "Evento gratis", "Con amigos", "Con chicos", "Comer barato"],
     });
   }
@@ -835,6 +1082,7 @@ function processMessageInternal(text) {
       mood: 'sin-plata',
       label: 'comer-barato',
       intro: "Perfecto. Vamos sin gastar de más.\n\n",
+      appendBusinesses: false,
       suggestions: ["Salir gratis", "Algo en casa", "Mate en plaza", "Otra idea"],
     });
   }
@@ -846,6 +1094,7 @@ function processMessageInternal(text) {
       mood: 'familia',
       label: 'modo-luchon',
       intro: "Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:\n\n",
+      appendBusinesses: false,
       suggestions: ["Juegos", "Comida barata", "Aire libre", "Otra idea"],
     });
   }
@@ -869,6 +1118,7 @@ function processMessageInternal(text) {
       mood: 'amigos',
       label: 'amigos',
       intro: buildIntentIntro('amigos', normalized),
+      appendBusinesses: false,
       suggestions: ["Aire libre", "Comer barato", "Juegos", "Otra idea"],
     });
   }
@@ -879,8 +1129,9 @@ function processMessageInternal(text) {
       category: 'comida',
       mood: null,
       label: 'comida',
-      intro: "¿Querés cocinar o salir a comer? Mientras tanto, van opciones:\n\n",
-      suggestions: ["Cocinamos algo", "Salir a comer", "Comer barato", "Otra receta"],
+      intro: "¿Querés cocinar o comprar algo hecho?\n\n",
+      appendBusinesses: false,
+      suggestions: ["Cocinamos algo", "Comprar comida", "Comer barato", "Otra receta"],
     });
   }
 
@@ -911,6 +1162,7 @@ function processMessageInternal(text) {
       mood: 'aire',
       label: 'pareja',
       intro: "Bien. Plan de a dos, sin complicarla.\n\n",
+      appendBusinesses: false,
       suggestions: ["Aire libre", "Comer barato", "Algo en casa", "Otra idea"],
     });
   }
@@ -930,7 +1182,7 @@ function processMessageInternal(text) {
 // ---------------- ENGINE PÚBLICO ----------------
 
 export function processMessage(text) {
-  const response = processMessageInternal(text);
+  const response = processMessageWithBrain(text);
   safeTrackUserChat(text, response);
   return response;
 }
