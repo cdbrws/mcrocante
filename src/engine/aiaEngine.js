@@ -1124,65 +1124,24 @@ function processMessageInternal(text) {
 
   const detected = detectLocalIntent(text);
 
-  if (detected.label === 'aire-libre') {
-    return buildResponseFromSuggestions({
-      input: text,
-      category: 'aire-libre',
-      mood: 'aire',
-      label: 'aire-libre',
-      intro: buildIntentIntro('aire-libre', normalized),
-      appendBusinesses: false,
-      suggestions: ["Otra salida", "Gratis", "Con amigos", "Con chicos", "Comer barato"],
-    });
-  }
+if (detected.label === 'aire-libre') {
+  return makeDecisionResponse(text, 'SALIR', analyzeMessage(text));
+}
 
-  if (detected.label === 'san-luis') {
-    return buildResponseFromSuggestions({
-      input: text,
-      category: 'san-luis',
-      mood: 'aire',
-      label: 'san-luis',
-      intro: buildIntentIntro('san-luis', normalized),
-      appendBusinesses: false,
-      suggestions: ["Aire libre", "Evento gratis", "Con amigos", "Con chicos", "Comer barato"],
-    });
-  }
+if (detected.label === 'san-luis') {
+  return makeDecisionResponse(text, 'SALIR', analyzeMessage(text));
+}
 
-  if (detected.label === 'alta-fiaca') {
-    return buildResponseFromSuggestions({
-      input: text,
-      category: 'alta-fiaca',
-      mood: 'fiaca',
-      label: 'alta-fiaca',
-      intro: "Alta fiaca. Te dejo opciones de mínimo esfuerzo:\n\n",
-      appendBusinesses: false,
-      suggestions: ["Buscamos una peli", "Cocinamos algo", "Escuchamos música", "Algo en casa"],
-    });
-  }
+if (detected.label === 'alta-fiaca') {
+  return makeDecisionResponse(text, 'ABURRIDO', analyzeMessage(text));
+}
+if (detected.label === 'comer-barato') {
+  return makeDecisionResponse(text, 'COMER', analyzeMessage(text));
+}
 
-  if (detected.label === 'comer-barato') {
-    return buildResponseFromSuggestions({
-      input: text,
-      category: 'comer-barato',
-      mood: 'sin-plata',
-      label: 'comer-barato',
-      intro: "Perfecto. Vamos sin gastar de más.\n\n",
-      appendBusinesses: false,
-      suggestions: ["Salir gratis", "Algo en casa", "Mate en plaza", "Otra idea"],
-    });
-  }
-
-  if (detected.label === 'modo-luchon') {
-    return buildResponseFromSuggestions({
-      input: text,
-      category: 'modo-luchon',
-      mood: 'familia',
-      label: 'modo-luchon',
-      intro: "Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:\n\n",
-      appendBusinesses: false,
-      suggestions: ["Juegos", "Comida barata", "Aire libre", "Otra idea"],
-    });
-  }
+if (detected.label === 'modo-luchon') {
+  return makeDecisionResponse(text, 'CASA', analyzeMessage(text));
+}
 
   if (detected.label === 'juegos') {
     return buildResponseFromSuggestions({
