@@ -430,8 +430,17 @@ function recipeFromIngredientsResponse(text) {
   const normalized = normalize(text);
   const ingredients = normalized.split(' ').filter(Boolean);
 
-  const recipes = getRecetasArray();
+  const recipes = (getRecetasArray() || []).filter(Boolean);
 
+if (!recipes.length) {
+  return {
+    text: 'Todavía no tengo recetas cargadas para eso. Probá con algo como arroz, harina o huevo.',
+    results: [],
+    suggestions: ['Arroz', 'Harina', 'Huevo', 'Otra idea'],
+    intent: 'cocinar-clarify',
+    category: 'comida',
+  };
+}
   const scored = recipes
     .map((recipe) => {
       const haystack = normalize([
@@ -439,8 +448,8 @@ function recipeFromIngredientsResponse(text) {
         recipe?.descripcion,
         recipe?.description,
         recipe?.tip,
-        ...(recipe?.ingredientes || []),
-        ...(recipe?.tags || []),
+...(Array.isArray(recipe?.ingredientes) ? recipe.ingredientes : []),
+...(Array.isArray(recipe?.tags) ? recipe.tags : []),
       ].join(' '));
 
       const score = ingredients.reduce((acc, ing) => {
