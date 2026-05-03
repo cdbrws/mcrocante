@@ -257,6 +257,22 @@ function makeDecisionResponse(text, intent, analysis) {
 
 function resolveExecutionTarget(text, inferredIntent) {
   const normalized = normalize(text);
+
+  if (
+    normalized.includes('algo en casa') ||
+    normalized === 'casa' ||
+    normalized.includes('plan casa') ||
+    normalized.includes('quedarme en casa') ||
+    normalized.includes('no quiero salir')
+  ) {
+    return {
+      intent: 'CASA',
+      category: 'casa',
+      label: 'casa',
+      action: 'decision',
+    };
+  }
+
   const choice = resolveUserChoice(text);
 
   if (choice?.action === 'execute' && choice?.intent) {
