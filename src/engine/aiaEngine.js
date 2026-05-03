@@ -549,7 +549,8 @@ if (ctx.lastAction === 'clarifying' && ctx.lastIntent === 'COCINAR') {
 if (
   isDecisionOpen() &&
   target?.action === 'execute' &&
-  ctx.lastAction === 'decision'
+  ctx.lastAction === 'decision' &&
+  ctx.lastOptions?.some(option => normalize(option) === normalize(text))
 ) {
   return executeWithBrain(text, target);
 }
