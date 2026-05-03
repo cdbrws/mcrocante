@@ -3,8 +3,11 @@ import { LOCALIDADES_SL } from '../data/localidades';
 import { RECETAS } from '../data/recetas';
 import { PELICULAS, BANDAS } from '../data/aiaData';
 import { getRandomSuggestions } from '../data/suggestions';
+import { getNegociosAprobados } from '../utils/solicitudes';
+import { trackChat } from '../utils/adminStats';
 
 // ---------------- UTIL ----------------
+
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -18,7 +21,7 @@ function normalize(text) {
 }
 
 function shuffle(arr) {
-  const s = [...arr];
+  const s = [...(arr || [])];
   for (let i = s.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [s[i], s[j]] = [s[j], s[i]];
@@ -46,34 +49,131 @@ function getBandName(band) {
   return band?.nombre || band?.name || 'Banda';
 }
 
+function getBusinessName(business) {
+  return business?.nombre || business?.name || business?.title || 'Negocio local';
+}
+
+function getBusinessDescription(business) {
+  return business?.desc || business?.descripcion || business?.description || business?.rubro || 'Opción local cargada en Modo Crocante.';
+}
+
+function businessMatchesTags(business, keywords = []) {
+  const haystack = normalize([
+    business?.nombre,
+    business?.rubro,
+    business?.zona,
+    business?.desc,
+    business?.descripcion,
+    ...(business?.tags || [])
+  ].join(' '));
+
+  return keywords.some((keyword) => haystack.includes(normalize(keyword)));
+}
+
+function getApprovedBusinessesForIntent(intentLabel, limit = 3) {
+  let negocios = [];
+
+  try {
+    negocios = getNegociosAprobados();
+  } catch {
+    negocios = [];
+  }
+
+  if (!Array.isArray(negocios) || negocios.length === 0) return [];
+
+  const map = {
+    'comer-barato': ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'barato', 'promo', 'minuta', 'cafe'],
+    comida: ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'sushi', 'pasta', 'minuta', 'cafe'],
+    amigos: ['bar', 'comida', 'pizza', 'hamburguesa', 'lomo', 'cafe', 'helado', 'juntada'],
+    'modo-luchon': ['familia', 'niños', 'chicos', 'helado', 'plaza', 'actividad', 'merienda'],
+    'san-luis': ['san luis', 'actividad', 'turismo', 'salida', 'local', 'paseo'],
+    pareja: ['cafe', 'bar', 'helado', 'comida', 'salida'],
+    noche: ['bar', 'comida', 'pizza', 'lomo', 'hamburguesa']
+  };
+
+  const keywords = map[intentLabel] || [];
+
+  const sponsors = negocios.filter((n) => n.sponsor || n.destacado);
+  const matched = negocios.filter((n) => businessMatchesTags(n, keywords));
+
+  const pool = [
+    ...sponsors.filter((n) => businessMatchesTags(n, keywords)),
+    ...matched,
+    ...sponsors,
+    ...negocios
+  ];
+
+  const unique = [];
+  const seen = new Set();
+
+  pool.forEach((business) => {
+    const id = String(business.id || getBusinessName(business));
+    if (!seen.has(id)) {
+      seen.add(id);
+      unique.push(business);
+    }
+  });
+
+  return shuffle(unique).slice(0, limit);
+}
+
+function appendBusinessBlock(text, intentLabel) {
+  const businesses = getApprovedBusinessesForIntent(intentLabel, 3);
+
+  if (!businesses.length) return text;
+
+  let next = `${text}\n\nNegocios locales que podrían servirte:\n`;
+
+  businesses.forEach((business, index) => {
+    const sponsorTag = business.sponsor ? ' ⭐ sponsor' : business.destacado ? ' destacado' : '';
+    next += `${index + 1}. **${getBusinessName(business)}**${sponsorTag} — ${getBusinessDescription(business)}`;
+    if (business.zona) next += ` (${business.zona})`;
+    next += '\n';
+  });
+
+  next += '\nDato crocante: si el negocio tiene promo real, después lo hacemos aparecer mejor. Sin humo.';
+
+  return next;
+}
+
+function safeTrackUserChat(input, response) {
+  try {
+    trackChat(input, response?.intent, response?.results || [], response?.category || response?.intent || null);
+  } catch {}
+}
+
 // memoria simple anti-repetición
 let lastSuggestions = [];
 
 // ---------------- FLUJOS GUIADOS ----------------
+
 function welcomeResponse() {
   return {
     text: "Buenas! Buscando que hacer hoy?\nAcá te dejo algunas opciones:",
     results: [],
     suggestions: ["No tengo un mango", "Plan en pareja", "Algo en casa"],
     intent: 'welcome',
+    category: 'inicio',
   };
 }
 
 function homeOptionsResponse() {
   return {
-    text: "Crocante. ¿Por dónde vamos?",
+    text: "Crocante.\n¿Por dónde vamos?",
     results: [],
     suggestions: ["Cocinamos algo", "Buscamos una peli", "Escuchamos música"],
     intent: 'casa',
+    category: 'casa',
   };
 }
 
 function shortClarifierResponse() {
   return {
-    text: "No te sigo del todo. ¿Querés algo para comer, salir o quedarte en casa?",
+    text: "No te sigo del todo.\n¿Querés algo para comer, salir o quedarte en casa?",
     results: [],
     suggestions: ["Comer", "Salir", "Casa"],
     intent: 'clarifier',
+    category: 'clarifier',
   };
 }
 
@@ -86,6 +186,7 @@ function recipeOptionsResponse() {
     results: [],
     suggestions,
     intent: 'receta-opciones',
+    category: 'comida',
   };
 }
 
@@ -98,6 +199,7 @@ function movieOptionsResponse() {
     results: [],
     suggestions,
     intent: 'peli-opciones',
+    category: 'pelicula',
   };
 }
 
@@ -110,6 +212,7 @@ function musicOptionsResponse() {
     results: [],
     suggestions,
     intent: 'musica-opciones',
+    category: 'musica',
   };
 }
 
@@ -140,6 +243,7 @@ function recipeDetailResponse(recipe) {
     results: [],
     suggestions: ["Otra receta", "Buscamos una peli", "Algo en casa"],
     intent: 'receta-detalle',
+    category: 'comida',
   };
 }
 
@@ -151,6 +255,7 @@ function movieDetailResponse(movie) {
     results: [],
     suggestions: ["Otra peli", "Algo tranqui", "Algo en casa"],
     intent: 'peli-detalle',
+    category: 'pelicula',
   };
 }
 
@@ -158,15 +263,17 @@ function musicDetailResponse(band) {
   const name = getBandName(band);
 
   return {
-    text: `Mandale **${name}**. Ideal para levantar el clima sin pensar demasiado.`,
+    text: `Mandale **${name}**.\nIdeal para levantar el clima sin pensar demasiado.`,
     results: [],
     suggestions: ["Otra banda", "Ver peli", "Algo en casa"],
     intent: 'musica-detalle',
+    category: 'musica',
   };
 }
 
 function findRecipeByText(text) {
   const normalized = normalize(text);
+
   return getRecetasArray().find((recipe) => {
     const name = normalize(getRecipeName(recipe));
     return normalized.includes(name) || name.includes(normalized);
@@ -175,6 +282,7 @@ function findRecipeByText(text) {
 
 function findMovieByText(text) {
   const normalized = normalize(text);
+
   return PELICULAS.find((movie) => {
     const title = normalize(getMovieTitle(movie));
     return normalized.includes(title) || title.includes(normalized);
@@ -183,17 +291,18 @@ function findMovieByText(text) {
 
 function findBandByText(text) {
   const normalized = normalize(text);
+
   return BANDAS.find((band) => {
     const name = normalize(getBandName(band));
     return normalized.includes(name) || name.includes(normalized);
   });
 }
 
-// ---------------- INTENCIÓN CROCRANTE ----------------
+// ---------------- INTENCIÓN CROCANTE ----------------
+
 function detectLocalIntent(text) {
   const normalized = normalize(text);
-
-  const hasAny = (words) => words.some((word) => normalized.includes(word));
+  const hasAny = (words) => words.some((word) => normalized.includes(normalize(word)));
 
   if (
     hasAny([
@@ -208,13 +317,11 @@ function detectLocalIntent(text) {
       'poca plata',
       'economico',
       'económico',
+      'comer barato',
+      'morfar barato',
     ])
   ) {
-    return {
-      category: 'comer-barato',
-      mood: 'sin-plata',
-      label: 'comer-barato',
-    };
+    return { category: 'comer-barato', mood: 'sin-plata', label: 'comer-barato' };
   }
 
   if (
@@ -232,11 +339,7 @@ function detectLocalIntent(text) {
       'algo tranquilo',
     ])
   ) {
-    return {
-      category: 'alta-fiaca',
-      mood: 'fiaca',
-      label: 'alta-fiaca',
-    };
+    return { category: 'alta-fiaca', mood: 'fiaca', label: 'alta-fiaca' };
   }
 
   if (
@@ -255,11 +358,7 @@ function detectLocalIntent(text) {
       'familia',
     ])
   ) {
-    return {
-      category: 'modo-luchon',
-      mood: 'familia',
-      label: 'modo-luchon',
-    };
+    return { category: 'modo-luchon', mood: 'familia', label: 'modo-luchon' };
   }
 
   if (
@@ -274,11 +373,7 @@ function detectLocalIntent(text) {
       'compas',
     ])
   ) {
-    return {
-      category: 'amigos',
-      mood: 'amigos',
-      label: 'amigos',
-    };
+    return { category: 'amigos', mood: 'amigos', label: 'amigos' };
   }
 
   if (
@@ -296,9 +391,13 @@ function detectLocalIntent(text) {
     ])
   ) {
     return {
-      category: normalized.includes('challenge') || normalized.includes('desafio') || normalized.includes('desafío') || normalized.includes('reto')
-        ? 'challenge'
-        : 'juegos',
+      category:
+        normalized.includes('challenge') ||
+        normalized.includes('desafio') ||
+        normalized.includes('desafío') ||
+        normalized.includes('reto')
+          ? 'challenge'
+          : 'juegos',
       mood: null,
       label: 'juegos',
     };
@@ -314,13 +413,10 @@ function detectLocalIntent(text) {
       'almuerzo',
       'merienda',
       'algo rico',
+      'salir a comer',
     ])
   ) {
-    return {
-      category: 'comida',
-      mood: null,
-      label: 'comida',
-    };
+    return { category: 'comida', mood: null, label: 'comida' };
   }
 
   if (
@@ -334,11 +430,7 @@ function detectLocalIntent(text) {
       'cine',
     ])
   ) {
-    return {
-      category: 'pelicula',
-      mood: null,
-      label: 'pelicula',
-    };
+    return { category: 'pelicula', mood: null, label: 'pelicula' };
   }
 
   if (
@@ -352,11 +444,7 @@ function detectLocalIntent(text) {
       'banda',
     ])
   ) {
-    return {
-      category: 'musica',
-      mood: null,
-      label: 'musica',
-    };
+    return { category: 'musica', mood: null, label: 'musica' };
   }
 
   if (
@@ -370,11 +458,7 @@ function detectLocalIntent(text) {
       'actividad física',
     ])
   ) {
-    return {
-      category: 'ejercicio',
-      mood: 'moverme',
-      label: 'ejercicio',
-    };
+    return { category: 'ejercicio', mood: 'moverme', label: 'ejercicio' };
   }
 
   if (
@@ -393,78 +477,69 @@ function detectLocalIntent(text) {
       'trapiche',
     ])
   ) {
-    return {
-      category: 'san-luis',
-      mood: 'aire',
-      label: 'san-luis',
-    };
+    return { category: 'san-luis', mood: 'aire', label: 'san-luis' };
   }
 
-  return {
-    category: null,
-    mood: null,
-    label: null,
-  };
+  return { category: null, mood: null, label: null };
 }
 
 function buildIntentIntro(intentLabel, normalized) {
   if (intentLabel === 'comer-barato') {
-    return "Modo crocante activado. Vamos a resolver sin gastar de más 💪\n\n";
+    return "Modo crocante activado. Vamos a resolver sin gastar de más.\n\n";
   }
 
   if (intentLabel === 'alta-fiaca') {
-    return "Nivel fiaca detectado. No te voy a exigir heroísmo, apenas sobrevivir con dignidad 😄\n\n";
+    return "Nivel fiaca detectado. No te voy a exigir heroísmo, apenas sobrevivir con dignidad.\n\n";
   }
 
   if (intentLabel === 'modo-luchon') {
-    return "Modo luchón/a activado. Ideas para entretener a los chicos sin vaciar la billetera 👇\n\n";
+    return "Modo luchón/a activado. Ideas para entretener a los chicos sin vaciar la billetera.\n\n";
   }
 
   if (intentLabel === 'amigos') {
-    return "Plan con amigos/as, versión simple y sin vender un riñón 👇\n\n";
+    return "Plan con amigos/as, versión simple y sin vender un riñón.\n\n";
   }
 
   if (intentLabel === 'juegos') {
-    return "Vamos con juegos simples, de esos que no necesitan producción de Netflix 👇\n\n";
+    return "Vamos con juegos simples, de esos que no necesitan producción de Netflix.\n\n";
   }
 
   if (intentLabel === 'comida') {
-    return "Vamos por algo para comer, simple y crocante 👇\n\n";
+    return "Vamos por algo para comer, simple y crocante.\n\n";
   }
 
   if (intentLabel === 'pelicula') {
-    return "Plan sillón detectado. Van opciones para mirar sin ponerse profundo 👇\n\n";
+    return "Plan sillón detectado. Van opciones para mirar sin ponerse profundo.\n\n";
   }
 
   if (intentLabel === 'musica') {
-    return "Vamos con música para levantar el clima 👇\n\n";
+    return "Vamos con música para levantar el clima.\n\n";
   }
 
   if (intentLabel === 'ejercicio') {
-    return "Vamos a mover un poco el cuerpo sin pagar gimnasio 👇\n\n";
+    return "Vamos a mover un poco el cuerpo sin pagar gimnasio.\n\n";
   }
 
   if (intentLabel === 'san-luis') {
-    return "Vamos con algo para hacer en San Luis sin complicarla 👇\n\n";
+    return "Vamos con algo para hacer en San Luis sin complicarla.\n\n";
   }
 
   if (normalized.includes("no se") || normalized.includes("que hago")) {
-    return "Tranqui, nos pasa a todos. Te tiro opciones crocantes 👇\n\n";
+    return "Tranqui, nos pasa a todos. Te tiro opciones crocantes.\n\n";
   }
 
   if (normalized.includes("aburrido") || normalized.includes("aburrida")) {
-    return "Ese estado es peligroso: terminás scrolleando dos horas. Mejor esto 👇\n\n";
+    return "Ese estado es peligroso: terminás scrolleando dos horas. Mejor esto.\n\n";
   }
 
   return "";
 }
 
 // ---------------- FALLBACK INTELIGENTE FINAL ----------------
+
 function buildLocalSuggestions(text) {
   const normalized = normalize(text);
-
   let { category, mood, label } = detectLocalIntent(text);
-
   const hour = new Date().getHours();
 
   if (!category) {
@@ -484,7 +559,6 @@ function buildLocalSuggestions(text) {
   }
 
   const intro = buildIntentIntro(label, normalized);
-
   const raw = getRandomSuggestions({ category, mood, limit: 8 });
 
   let items = raw
@@ -505,32 +579,30 @@ function buildLocalSuggestions(text) {
 
   textResp += "\n¿Querés que lo ajuste a casa, calle, chicos/as o cero plata?";
 
+  textResp = appendBusinessBlock(textResp, label);
+
   return {
     text: textResp,
     results: [],
     suggestions: ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a"],
     intent: label || 'fallback-local',
+    category,
   };
 }
 
-// ---------------- ENGINE ----------------
-export function processMessage(text) {
+// ---------------- ENGINE INTERNO ----------------
+
+function processMessageInternal(text) {
   const normalized = normalize(text);
 
   const selectedRecipe = findRecipeByText(text);
-  if (selectedRecipe) {
-    return recipeDetailResponse(selectedRecipe);
-  }
+  if (selectedRecipe) return recipeDetailResponse(selectedRecipe);
 
   const selectedMovie = findMovieByText(text);
-  if (selectedMovie) {
-    return movieDetailResponse(selectedMovie);
-  }
+  if (selectedMovie) return movieDetailResponse(selectedMovie);
 
   const selectedBand = findBandByText(text);
-  if (selectedBand) {
-    return musicDetailResponse(selectedBand);
-  }
+  if (selectedBand) return musicDetailResponse(selectedBand);
 
   if (
     normalized.includes("hola") ||
@@ -585,6 +657,7 @@ export function processMessage(text) {
       results: [],
       suggestions: suggestions.length ? suggestions : ["Buscamos una peli", "Cocinamos algo", "Escuchamos música"],
       intent: 'alta-fiaca',
+      category: 'alta-fiaca',
     };
   }
 
@@ -599,10 +672,11 @@ export function processMessage(text) {
     const suggestions = raw.slice(0, 3).map((item) => item.title);
 
     return {
-      text: "Perfecto. Vamos sin gastar de más.",
+      text: appendBusinessBlock("Perfecto. Vamos sin gastar de más.", 'comer-barato'),
       results: [],
       suggestions: suggestions.length ? suggestions : ["Salir gratis", "Algo en casa", "Mate en plaza"],
       intent: 'comer-barato',
+      category: 'comer-barato',
     };
   }
 
@@ -619,10 +693,11 @@ export function processMessage(text) {
     const suggestions = raw.slice(0, 3).map((item) => item.title);
 
     return {
-      text: "Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:",
+      text: appendBusinessBlock("Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:", 'modo-luchon'),
       results: [],
       suggestions: suggestions.length ? suggestions : ["Búsqueda del tesoro casera", "Dibujar con lo que haya", "Ver dibujitos gratis"],
       intent: 'modo-luchon',
+      category: 'modo-luchon',
     };
   }
 
@@ -641,33 +716,37 @@ export function processMessage(text) {
       results: [],
       suggestions: suggestions.length ? suggestions : ["Batalla naval en papel", "Truco", "Dígalo con mímica"],
       intent: 'juegos',
+      category: 'juegos',
     };
   }
 
   if (normalized.includes("plan en pareja") || normalized.includes("pareja")) {
     return {
-      text: "Bien. Plan de a dos, sin complicarla.",
+      text: appendBusinessBlock("Bien. Plan de a dos, sin complicarla.", 'pareja'),
       results: [],
       suggestions: ["Salir barato", "Algo en casa", "Caminata"],
       intent: 'pareja',
+      category: 'pareja',
     };
   }
 
   if (normalized.includes("comer")) {
     return {
-      text: "¿Querés cocinar o salir a comer?",
+      text: appendBusinessBlock("¿Querés cocinar o salir a comer?", 'comida'),
       results: [],
       suggestions: ["Cocinamos algo", "Salir a comer", "Comer barato"],
       intent: 'comer',
+      category: 'comida',
     };
   }
 
   if (normalized.includes("salir")) {
     return {
-      text: "Dale. ¿Qué tipo de salida querés?",
+      text: appendBusinessBlock("Dale. ¿Qué tipo de salida querés?", 'san-luis'),
       results: [],
       suggestions: ["Gratis", "Cerca mio", "Aire libre"],
       intent: 'salir',
+      category: 'san-luis',
     };
   }
 
@@ -683,13 +762,28 @@ export function processMessage(text) {
   return buildLocalSuggestions(text);
 }
 
+// ---------------- ENGINE PÚBLICO ----------------
+
+export function processMessage(text) {
+  const response = processMessageInternal(text);
+  safeTrackUserChat(text, response);
+  return response;
+}
+
 // ---------------- OTROS ----------------
+
 export function getCrocanteDelDia() {
   const idx = new Date().getDay() % CROCANTE_DEL_DIA.length;
   return CROCANTE_DEL_DIA[idx];
 }
 
 export function getFeaturedEmprendedores() {
+  const aprobados = getApprovedBusinessesForIntent('comida', 3);
+
+  if (aprobados.length) {
+    return aprobados;
+  }
+
   return EMPRENDEDORES.slice(0, 3);
 }
 
