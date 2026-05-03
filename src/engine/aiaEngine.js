@@ -20,6 +20,11 @@ function normalize(text) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function hasAny(text, words = []) {
+  const normalized = normalize(text);
+  return words.some((word) => normalized.includes(normalize(word)));
+}
+
 function shuffle(arr) {
   const s = [...(arr || [])];
   for (let i = s.length - 1; i > 0; i -= 1) {
@@ -27,6 +32,20 @@ function shuffle(arr) {
     [s[i], s[j]] = [s[j], s[i]];
   }
   return s;
+}
+
+function uniqueByKey(items, getKey) {
+  const seen = new Set();
+  const out = [];
+
+  (items || []).forEach((item) => {
+    const key = String(getKey(item) || '');
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push(item);
+  });
+
+  return out;
 }
 
 function getRecetasArray() {
@@ -57,17 +76,77 @@ function getBusinessDescription(business) {
   return business?.desc || business?.descripcion || business?.description || business?.rubro || 'Opción local cargada en Modo Crocante.';
 }
 
+function getBusinessZone(business) {
+  return business?.zona || business?.location || business?.localidad || '';
+}
+
+function getSuggestionText(item, index) {
+  const featured = item?.featured ? ' ⭐' : '';
+  const sponsor = item?.sponsor ? ' sponsor' : '';
+  const location = item?.location ? ` (${item.location})` : '';
+
+  return `${index + 1}. **${item.title}**${featured}${sponsor} — ${item.description}${location}`;
+}
+
 function businessMatchesTags(business, keywords = []) {
+  const haystack = normalize([
+    business?.nombre,
+    business?.name,
+    business?.title,
+    business?.rubro,
+    business?.zona,
+    business?.location,
+    business?.desc,
+    business?.descripcion,
+    business?.description,
+    ...(business?.tags || [])
+  ].join(' '));
+
+  return keywords.some((keyword) => haystack.includes(normalize(keyword)));
+}
+
+function getBusinessKeywordsByIntent(intentLabel) {
+  const map = {
+    'comer-barato': ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'barato', 'promo', 'minuta', 'cafe', 'merienda'],
+    comida: ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'sushi', 'pasta', 'minuta', 'cafe', 'merienda', 'helado'],
+    comer: ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'sushi', 'pasta', 'minuta', 'cafe'],
+    amigos: ['bar', 'comida', 'pizza', 'hamburguesa', 'lomo', 'cafe', 'helado', 'juntada', 'amigos'],
+    'modo-luchon': ['familia', 'niños', 'ninos', 'chicos', 'helado', 'plaza', 'actividad', 'merienda'],
+    familia: ['familia', 'niños', 'ninos', 'chicos', 'helado', 'plaza', 'actividad', 'merienda'],
+    'san-luis': ['san luis', 'actividad', 'turismo', 'salida', 'local', 'paseo', 'aire libre', 'evento'],
+    'aire-libre': ['aire libre', 'plaza', 'paseo', 'actividad', 'evento', 'salida', 'san luis'],
+    salir: ['salida', 'comida', 'bar', 'cafe', 'helado', 'actividad', 'evento', 'paseo'],
+    pareja: ['cafe', 'bar', 'helado', 'comida', 'salida', 'pareja'],
+    noche: ['bar', 'comida', 'pizza', 'lomo', 'hamburguesa', 'noche'],
+  };
+
+  return map[intentLabel] || [];
+}
+
+function scoreBusinessForIntent(business, intentLabel) {
+  const keywords = getBusinessKeywordsByIntent(intentLabel);
+  let score = 0;
+
+  if (business?.sponsor) score += 20;
+  if (business?.destacado) score += 10;
+  if (business?.prioridad === 'premium') score += 8;
+  if (business?.prioridad === 'alta') score += 4;
+
+  if (businessMatchesTags(business, keywords)) score += 12;
+
   const haystack = normalize([
     business?.nombre,
     business?.rubro,
     business?.zona,
     business?.desc,
-    business?.descripcion,
-    ...(business?.tags || [])
+    ...(business?.tags || []),
   ].join(' '));
 
-  return keywords.some((keyword) => haystack.includes(normalize(keyword)));
+  keywords.forEach((keyword) => {
+    if (haystack.includes(normalize(keyword))) score += 2;
+  });
+
+  return score;
 }
 
 function getApprovedBusinessesForIntent(intentLabel, limit = 3) {
@@ -81,40 +160,18 @@ function getApprovedBusinessesForIntent(intentLabel, limit = 3) {
 
   if (!Array.isArray(negocios) || negocios.length === 0) return [];
 
-  const map = {
-    'comer-barato': ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'barato', 'promo', 'minuta', 'cafe'],
-    comida: ['comida', 'pizza', 'lomo', 'hamburguesa', 'empanada', 'sushi', 'pasta', 'minuta', 'cafe'],
-    amigos: ['bar', 'comida', 'pizza', 'hamburguesa', 'lomo', 'cafe', 'helado', 'juntada'],
-    'modo-luchon': ['familia', 'niños', 'chicos', 'helado', 'plaza', 'actividad', 'merienda'],
-    'san-luis': ['san luis', 'actividad', 'turismo', 'salida', 'local', 'paseo'],
-    pareja: ['cafe', 'bar', 'helado', 'comida', 'salida'],
-    noche: ['bar', 'comida', 'pizza', 'lomo', 'hamburguesa']
-  };
+  const scored = negocios
+    .filter(Boolean)
+    .map((business) => ({
+      business,
+      score: scoreBusinessForIntent(business, intentLabel),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((row) => row.business);
 
-  const keywords = map[intentLabel] || [];
+  const unique = uniqueByKey(scored, (business) => business.id || getBusinessName(business));
 
-  const sponsors = negocios.filter((n) => n.sponsor || n.destacado);
-  const matched = negocios.filter((n) => businessMatchesTags(n, keywords));
-
-  const pool = [
-    ...sponsors.filter((n) => businessMatchesTags(n, keywords)),
-    ...matched,
-    ...sponsors,
-    ...negocios
-  ];
-
-  const unique = [];
-  const seen = new Set();
-
-  pool.forEach((business) => {
-    const id = String(business.id || getBusinessName(business));
-    if (!seen.has(id)) {
-      seen.add(id);
-      unique.push(business);
-    }
-  });
-
-  return shuffle(unique).slice(0, limit);
+  return unique.slice(0, limit);
 }
 
 function appendBusinessBlock(text, intentLabel) {
@@ -127,11 +184,12 @@ function appendBusinessBlock(text, intentLabel) {
   businesses.forEach((business, index) => {
     const sponsorTag = business.sponsor ? ' ⭐ sponsor' : business.destacado ? ' destacado' : '';
     next += `${index + 1}. **${getBusinessName(business)}**${sponsorTag} — ${getBusinessDescription(business)}`;
-    if (business.zona) next += ` (${business.zona})`;
+    const zone = getBusinessZone(business);
+    if (zone) next += ` (${zone})`;
     next += '\n';
   });
 
-  next += '\nDato crocante: si el negocio tiene promo real, después lo hacemos aparecer mejor. Sin humo.';
+  next += '\nDato crocante: los sponsors/destacados aparecen mejor si están bien tagueados. Sin humo.';
 
   return next;
 }
@@ -151,7 +209,7 @@ function welcomeResponse() {
   return {
     text: "Buenas! Buscando que hacer hoy?\nAcá te dejo algunas opciones:",
     results: [],
-    suggestions: ["No tengo un mango", "Plan en pareja", "Algo en casa"],
+    suggestions: ["No tengo un mango", "Plan en pareja", "Algo en casa", "Aire libre"],
     intent: 'welcome',
     category: 'inicio',
   };
@@ -171,7 +229,7 @@ function shortClarifierResponse() {
   return {
     text: "No te sigo del todo.\n¿Querés algo para comer, salir o quedarte en casa?",
     results: [],
-    suggestions: ["Comer", "Salir", "Casa"],
+    suggestions: ["Comer", "Salir", "Casa", "Aire libre"],
     intent: 'clarifier',
     category: 'clarifier',
   };
@@ -302,13 +360,12 @@ function findBandByText(text) {
 
 function detectLocalIntent(text) {
   const normalized = normalize(text);
-  const hasAny = (words) => words.some((word) => normalized.includes(normalize(word)));
 
+  // Orden importante: "comer barato" antes de "salir" o "comer".
   if (
-    hasAny([
+    hasAny(normalized, [
       'no tengo un mango',
       'sin plata',
-      'gratis',
       'barato',
       'barata',
       'no tengo plata',
@@ -325,7 +382,40 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
+      'aire libre',
+      'afuera',
+      'salida aire libre',
+      'plaza',
+      'caminar afuera',
+      'caminar',
+      'paseo',
+      'parque',
+      'mate afuera',
+    ])
+  ) {
+    return { category: 'aire-libre', mood: 'aire', label: 'aire-libre' };
+  }
+
+  if (
+    hasAny(normalized, [
+      'evento',
+      'eventos',
+      'feria',
+      'festival',
+      'recital',
+      'actividad',
+      'actividades',
+      'finde',
+      'fin de semana',
+      'hoy a la noche',
+    ])
+  ) {
+    return { category: 'san-luis', mood: 'aire', label: 'san-luis' };
+  }
+
+  if (
+    hasAny(normalized, [
       'fiaca',
       'paja',
       'cansado',
@@ -343,7 +433,7 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'hijos',
       'hijas',
       'niños',
@@ -362,7 +452,7 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'amigos',
       'amigas',
       'juntada',
@@ -377,7 +467,7 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'juego',
       'jugar',
       'cartas',
@@ -404,7 +494,7 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'comer',
       'hambre',
       'cocinar',
@@ -420,7 +510,7 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'peli',
       'pelicula',
       'película',
@@ -434,7 +524,7 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'musica',
       'música',
       'cancion',
@@ -448,11 +538,10 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'ejercicio',
       'entrenar',
       'moverme',
-      'caminar',
       'rutina',
       'actividad fisica',
       'actividad física',
@@ -462,12 +551,8 @@ function detectLocalIntent(text) {
   }
 
   if (
-    hasAny([
+    hasAny(normalized, [
       'salir',
-      'afuera',
-      'aire libre',
-      'paseo',
-      'plaza',
       'san luis',
       'potrero',
       'la punta',
@@ -486,6 +571,10 @@ function detectLocalIntent(text) {
 function buildIntentIntro(intentLabel, normalized) {
   if (intentLabel === 'comer-barato') {
     return "Modo crocante activado. Vamos a resolver sin gastar de más.\n\n";
+  }
+
+  if (intentLabel === 'aire-libre') {
+    return "Salida al aire libre detectada. Nada de encerrarse mirando el techo.\n\n";
   }
 
   if (intentLabel === 'alta-fiaca') {
@@ -535,6 +624,83 @@ function buildIntentIntro(intentLabel, normalized) {
   return "";
 }
 
+function getIntentSuggestions({ category, mood, query, limit = 8 }) {
+  let raw = getRandomSuggestions({ category, mood, query, limit });
+
+  // Si pide aire libre y no hay suficiente, mezclamos san-luis.
+  if (category === 'aire-libre' && raw.length < 3) {
+    raw = [
+      ...raw,
+      ...getRandomSuggestions({ category: 'san-luis', mood: 'aire', query, limit }),
+    ];
+  }
+
+  // Si pide san-luis y no hay suficiente, mezclamos aire-libre.
+  if (category === 'san-luis' && raw.length < 3) {
+    raw = [
+      ...raw,
+      ...getRandomSuggestions({ category: 'aire-libre', mood: 'aire', query, limit }),
+    ];
+  }
+
+  return uniqueByKey(raw, (item) => item.id).slice(0, limit);
+}
+
+function buildResponseFromSuggestions({
+  input,
+  category,
+  mood,
+  label,
+  intro,
+  limit = 3,
+  appendBusinesses = true,
+  suggestions = ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a", "Aire libre"],
+}) {
+  const raw = getIntentSuggestions({
+    category,
+    mood,
+    query: input,
+    limit: 8,
+  });
+
+  let items = raw
+    .filter((item) => !lastSuggestions.includes(item.id))
+    .slice(0, limit);
+
+  if (items.length === 0) {
+    items = raw.slice(0, limit);
+  }
+
+  lastSuggestions = items.map((item) => item.id);
+
+  let textResp = intro || buildIntentIntro(label, normalize(input));
+
+  if (items.length > 0) {
+    textResp += "Mirá esto:\n\n";
+
+    items.forEach((item, idx) => {
+      textResp += `${getSuggestionText(item, idx)}\n`;
+    });
+  } else {
+    textResp += "No tengo buenas opciones cargadas para eso todavía.\n\n";
+    textResp += "Cargá contenido desde Admin → Base AIA con tags claros y empieza a aparecer acá.\n";
+  }
+
+  textResp += "\n¿Querés que lo ajuste a casa, calle, chicos/as, amigos o cero plata?";
+
+  if (appendBusinesses) {
+    textResp = appendBusinessBlock(textResp, label || category);
+  }
+
+  return {
+    text: textResp,
+    results: [],
+    suggestions,
+    intent: label || category || 'fallback-local',
+    category,
+  };
+}
+
 // ---------------- FALLBACK INTELIGENTE FINAL ----------------
 
 function buildLocalSuggestions(text) {
@@ -553,41 +719,19 @@ function buildLocalSuggestions(text) {
       category = 'comida';
       label = 'comida';
     } else {
-      category = 'casa';
-      label = 'casa';
+      category = 'san-luis';
+      mood = 'aire';
+      label = 'san-luis';
     }
   }
 
-  const intro = buildIntentIntro(label, normalized);
-  const raw = getRandomSuggestions({ category, mood, limit: 8 });
-
-  let items = raw
-    .filter((item) => !lastSuggestions.includes(item.id))
-    .slice(0, 3);
-
-  if (items.length === 0) {
-    items = raw.slice(0, 3);
-  }
-
-  lastSuggestions = items.map((item) => item.id);
-
-  let textResp = intro + "Mirá esto:\n\n";
-
-  items.forEach((item, idx) => {
-    textResp += `${idx + 1}. **${item.title}** — ${item.description}\n`;
-  });
-
-  textResp += "\n¿Querés que lo ajuste a casa, calle, chicos/as o cero plata?";
-
-  textResp = appendBusinessBlock(textResp, label);
-
-  return {
-    text: textResp,
-    results: [],
-    suggestions: ["Otra idea", "Comer barato", "Algo en casa", "Juegos", "Modo luchón/a"],
-    intent: label || 'fallback-local',
+  return buildResponseFromSuggestions({
+    input: text,
     category,
-  };
+    mood,
+    label,
+    intro: buildIntentIntro(label, normalized),
+  });
 }
 
 // ---------------- ENGINE INTERNO ----------------
@@ -648,106 +792,127 @@ function processMessageInternal(text) {
     return musicOptionsResponse();
   }
 
-  if (normalized.includes("fiaca")) {
-    const raw = getRandomSuggestions({ category: 'alta-fiaca', mood: 'fiaca', limit: 4 });
-    const suggestions = raw.slice(0, 3).map((item) => item.title);
+  const detected = detectLocalIntent(text);
 
-    return {
-      text: "Alta fiaca. Te dejo opciones de mínimo esfuerzo:",
-      results: [],
-      suggestions: suggestions.length ? suggestions : ["Buscamos una peli", "Cocinamos algo", "Escuchamos música"],
-      intent: 'alta-fiaca',
+  if (detected.label === 'aire-libre') {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: 'aire-libre',
+      mood: 'aire',
+      label: 'aire-libre',
+      intro: buildIntentIntro('aire-libre', normalized),
+      suggestions: ["Otra salida", "Gratis", "Con amigos", "Con chicos", "Comer barato"],
+    });
+  }
+
+  if (detected.label === 'san-luis') {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: 'san-luis',
+      mood: 'aire',
+      label: 'san-luis',
+      intro: buildIntentIntro('san-luis', normalized),
+      suggestions: ["Aire libre", "Evento gratis", "Con amigos", "Con chicos", "Comer barato"],
+    });
+  }
+
+  if (detected.label === 'alta-fiaca') {
+    return buildResponseFromSuggestions({
+      input: text,
       category: 'alta-fiaca',
-    };
+      mood: 'fiaca',
+      label: 'alta-fiaca',
+      intro: "Alta fiaca. Te dejo opciones de mínimo esfuerzo:\n\n",
+      appendBusinesses: false,
+      suggestions: ["Buscamos una peli", "Cocinamos algo", "Escuchamos música", "Algo en casa"],
+    });
   }
 
-  if (
-    normalized.includes("no tengo un mango") ||
-    normalized.includes("sin plata") ||
-    normalized.includes("gratis") ||
-    normalized.includes("no tengo plata") ||
-    normalized.includes("estoy seco")
-  ) {
-    const raw = getRandomSuggestions({ category: 'comer-barato', mood: 'sin-plata', limit: 4 });
-    const suggestions = raw.slice(0, 3).map((item) => item.title);
-
-    return {
-      text: appendBusinessBlock("Perfecto. Vamos sin gastar de más.", 'comer-barato'),
-      results: [],
-      suggestions: suggestions.length ? suggestions : ["Salir gratis", "Algo en casa", "Mate en plaza"],
-      intent: 'comer-barato',
+  if (detected.label === 'comer-barato') {
+    return buildResponseFromSuggestions({
+      input: text,
       category: 'comer-barato',
-    };
+      mood: 'sin-plata',
+      label: 'comer-barato',
+      intro: "Perfecto. Vamos sin gastar de más.\n\n",
+      suggestions: ["Salir gratis", "Algo en casa", "Mate en plaza", "Otra idea"],
+    });
   }
 
-  if (
-    normalized.includes("modo luchon") ||
-    normalized.includes("modo luchón") ||
-    normalized.includes("con chicos") ||
-    normalized.includes("con mis hijos") ||
-    normalized.includes("con los chicos") ||
-    normalized.includes("niños") ||
-    normalized.includes("ninos")
-  ) {
-    const raw = getRandomSuggestions({ category: 'modo-luchon', mood: 'familia', limit: 4 });
-    const suggestions = raw.slice(0, 3).map((item) => item.title);
-
-    return {
-      text: appendBusinessBlock("Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:", 'modo-luchon'),
-      results: [],
-      suggestions: suggestions.length ? suggestions : ["Búsqueda del tesoro casera", "Dibujar con lo que haya", "Ver dibujitos gratis"],
-      intent: 'modo-luchon',
+  if (detected.label === 'modo-luchon') {
+    return buildResponseFromSuggestions({
+      input: text,
       category: 'modo-luchon',
-    };
+      mood: 'familia',
+      label: 'modo-luchon',
+      intro: "Modo luchón/a activado. Vamos con planes para chicos/as sin gastar:\n\n",
+      suggestions: ["Juegos", "Comida barata", "Aire libre", "Otra idea"],
+    });
   }
 
-  if (
-    normalized.includes("juegos") ||
-    normalized.includes("jugar") ||
-    normalized.includes("truco") ||
-    normalized.includes("generala") ||
-    normalized.includes("batalla naval")
-  ) {
-    const raw = getRandomSuggestions({ category: 'juegos', limit: 4 });
-    const suggestions = raw.slice(0, 3).map((item) => item.title);
-
-    return {
-      text: "Vamos con juegos simples, baratos y sin vueltas:",
-      results: [],
-      suggestions: suggestions.length ? suggestions : ["Batalla naval en papel", "Truco", "Dígalo con mímica"],
-      intent: 'juegos',
+  if (detected.label === 'juegos') {
+    return buildResponseFromSuggestions({
+      input: text,
       category: 'juegos',
-    };
+      mood: null,
+      label: 'juegos',
+      intro: "Vamos con juegos simples, baratos y sin vueltas:\n\n",
+      appendBusinesses: false,
+      suggestions: ["Otro juego", "Modo luchón/a", "Algo en casa", "Con amigos"],
+    });
+  }
+
+  if (detected.label === 'amigos') {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: 'amigos',
+      mood: 'amigos',
+      label: 'amigos',
+      intro: buildIntentIntro('amigos', normalized),
+      suggestions: ["Aire libre", "Comer barato", "Juegos", "Otra idea"],
+    });
+  }
+
+  if (detected.label === 'comida') {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: 'comida',
+      mood: null,
+      label: 'comida',
+      intro: "¿Querés cocinar o salir a comer? Mientras tanto, van opciones:\n\n",
+      suggestions: ["Cocinamos algo", "Salir a comer", "Comer barato", "Otra receta"],
+    });
+  }
+
+  if (detected.label === 'pelicula') {
+    return movieOptionsResponse();
+  }
+
+  if (detected.label === 'musica') {
+    return musicOptionsResponse();
+  }
+
+  if (detected.label === 'ejercicio') {
+    return buildResponseFromSuggestions({
+      input: text,
+      category: 'ejercicio',
+      mood: 'moverme',
+      label: 'ejercicio',
+      intro: buildIntentIntro('ejercicio', normalized),
+      appendBusinesses: false,
+      suggestions: ["Aire libre", "Algo en casa", "Caminar", "Otra idea"],
+    });
   }
 
   if (normalized.includes("plan en pareja") || normalized.includes("pareja")) {
-    return {
-      text: appendBusinessBlock("Bien. Plan de a dos, sin complicarla.", 'pareja'),
-      results: [],
-      suggestions: ["Salir barato", "Algo en casa", "Caminata"],
-      intent: 'pareja',
-      category: 'pareja',
-    };
-  }
-
-  if (normalized.includes("comer")) {
-    return {
-      text: appendBusinessBlock("¿Querés cocinar o salir a comer?", 'comida'),
-      results: [],
-      suggestions: ["Cocinamos algo", "Salir a comer", "Comer barato"],
-      intent: 'comer',
-      category: 'comida',
-    };
-  }
-
-  if (normalized.includes("salir")) {
-    return {
-      text: appendBusinessBlock("Dale. ¿Qué tipo de salida querés?", 'san-luis'),
-      results: [],
-      suggestions: ["Gratis", "Cerca mio", "Aire libre"],
-      intent: 'salir',
+    return buildResponseFromSuggestions({
+      input: text,
       category: 'san-luis',
-    };
+      mood: 'aire',
+      label: 'pareja',
+      intro: "Bien. Plan de a dos, sin complicarla.\n\n",
+      suggestions: ["Aire libre", "Comer barato", "Algo en casa", "Otra idea"],
+    });
   }
 
   if (
