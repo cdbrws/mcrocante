@@ -1,20 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import { processMessage } from '../engine/aiaEngine';
 import { getClima } from '../utils/clima';
-import { trackChat } from '../utils/adminStats';
+import {
+  trackSuggestionClick,
+  trackEvent,
+  trackUsageTime,
+  trackPlaceView,
+  trackSave,
+} from '../utils/adminStats';
 import TypingIndicator from './TypingIndicator';
 import PlaceCard from './PlaceCard';
 import CookieSend from './CookieSend';
 
 const QUICK_CATS = [
-  { emoji: '💸', label: 'Sin un mango', msg: 'No tengo un mango' },
-  { emoji: '🏠', label: 'Casa', msg: 'Algo en casa' },
-  { emoji: '💑', label: 'Pareja', msg: 'Plan en pareja' },
-  { emoji: '🍔', label: 'Comer', msg: 'Comer' },
-  { emoji: '🎬', label: 'Peli', msg: 'Buscamos una peli' },
-  { emoji: '🎸', label: 'Música', msg: 'Escuchamos música' },
-  { emoji: '🌧️', label: 'Llueve', msg: 'Está lloviendo' },
-  { emoji: '🏔️', label: 'Aire libre', msg: 'Aire libre' },
+  { emoji: '', label: 'Sin un mango', msg: 'No tengo un mango' },
+  { emoji: '', label: 'Casa', msg: 'Algo en casa' },
+  { emoji: '', label: 'Pareja', msg: 'Plan en pareja' },
+  { emoji: '', label: 'Comer', msg: 'Comer' },
+  { emoji: '', label: 'Peli', msg: 'Buscamos una peli' },
+  { emoji: '', label: 'Música', msg: 'Escuchamos música' },
+  { emoji: '️', label: 'Llueve', msg: 'Está lloviendo' },
+  { emoji: '️', label: 'Aire libre', msg: 'Aire libre' },
 ];
 
 const INITIAL_PROMPTS = [
@@ -35,6 +41,20 @@ function uniqueThree(list) {
   return [...new Set(list || [])].filter(Boolean).slice(0, 3);
 }
 
+function AiaAvatar({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <path
+        d="M32 4C16.536 4 4 16.536 4 32s12.536 28 28 28c13.44 0 24.67-9.45 27.44-22.04C58.2 38.8 56 40 53.5 40c-2.5 0-4.5-2-4.5-4.5S51 31 53.5 31c1.38 0 2.6.62 3.44 1.59C58.98 29.54 60 26.37 60 22.5 60 10.07 47.93 4 32 4z"
+        fill="#F97316"
+      />
+      <ellipse cx="20" cy="18" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
+      <ellipse cx="38" cy="14" rx="2.5" ry="2" fill="#7C2D12" opacity="0.7" />
+      <ellipse cx="28" cy="42" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
+    </svg>
+  );
+}
+
 export default function ChatScreen({
   messages,
   onAddMessage,
@@ -52,6 +72,20 @@ export default function ChatScreen({
   );
 
   const scrollRef = useRef(null);
+  const sessionStartRef = useRef(Date.now());
+
+  useEffect(() => {
+    trackEvent('chat_screen_open', {
+      source: 'ChatScreen',
+    });
+
+    return () => {
+      trackUsageTime(Date.now() - sessionStartRef.current);
+      trackEvent('chat_screen_close', {
+        source: 'ChatScreen',
+      });
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof chatKey !== 'undefined') {
@@ -59,6 +93,10 @@ export default function ChatScreen({
       setLastSuggestions([]);
       setInput('');
       setTyping(false);
+
+      trackEvent('chat_reset', {
+        chatKey,
+      });
     }
   }, [chatKey]);
 
@@ -80,7 +118,6 @@ export default function ChatScreen({
 
           setLastSuggestions(uniqueThree(resp.suggestions));
           setTyping(false);
-          trackChat(messages[0].text, resp.intent, resp.results || []);
         }, 600);
       }, 500);
 
@@ -97,9 +134,15 @@ export default function ChatScreen({
     }
   }, [messages, typing]);
 
-  const triggerSend = (text) => {
+  const triggerSend = (text, meta = {}) => {
     const cleanText = String(text || '').trim();
     if (!cleanText) return;
+
+    trackEvent('chat_send', {
+      text: cleanText,
+      source: meta.source || 'manual',
+      label: meta.label || null,
+    });
 
     setInput('');
     setFadeOut(true);
@@ -125,17 +168,39 @@ export default function ChatScreen({
 
         setLastSuggestions(uniqueThree(resp.suggestions));
         setTyping(false);
-        trackChat(cleanText, resp.intent, resp.results || []);
       }, 600);
     }, 450);
   };
 
   const handleSend = () => {
-    triggerSend(input);
+    triggerSend(input, { source: 'input' });
   };
 
-  const handleSuggestion = (suggestion) => {
-    triggerSend(suggestion);
+  const handleSuggestion = (suggestion, source = 'suggestion') => {
+    trackSuggestionClick(suggestion, { source });
+    triggerSend(suggestion, { source, label: suggestion });
+  };
+
+  const handleQuickCategory = (cat) => {
+    trackSuggestionClick(cat.msg, {
+      source: 'quick_category',
+      label: cat.label,
+    });
+
+    triggerSend(cat.msg, {
+      source: 'quick_category',
+      label: cat.label,
+    });
+  };
+
+  const handleToggleSave = (itemId) => {
+    trackSave(itemId);
+    onToggleSave(itemId);
+  };
+
+  const handlePlaceView = (item) => {
+    if (!item?.id) return;
+    trackPlaceView(item.id);
   };
 
   const handleKeyDown = (e) => {
@@ -156,15 +221,7 @@ export default function ChatScreen({
 
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 bg-naranja/10 rounded-full flex items-center justify-center overflow-hidden">
-            <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
-              <path
-                d="M32 4C16.536 4 4 16.536 4 32s12.536 28 28 28c13.44 0 24.67-9.45 27.44-22.04C58.2 38.8 56 40 53.5 40c-2.5 0-4.5-2-4.5-4.5S51 31 53.5 31c1.38 0 2.6.62 3.44 1.59C58.98 29.54 60 26.37 60 22.5 60 10.07 47.93 4 32 4z"
-                fill="#F97316"
-              />
-              <ellipse cx="20" cy="18" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
-              <ellipse cx="38" cy="14" rx="2.5" ry="2" fill="#7C2D12" opacity="0.7" />
-              <ellipse cx="28" cy="42" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
-            </svg>
+            <AiaAvatar size={22} />
           </div>
 
           <div>
@@ -176,6 +233,7 @@ export default function ChatScreen({
         <div className="ml-auto flex items-center gap-1">
           {(() => {
             const clima = getClima();
+
             return (
               <span className="text-sm" title={clima.desc}>
                 {clima.emoji} {clima.temperatura}°
@@ -201,7 +259,7 @@ export default function ChatScreen({
               {initialPrompts.map((prompt) => (
                 <button
                   key={prompt}
-                  onClick={() => handleSuggestion(prompt)}
+                  onClick={() => handleSuggestion(prompt, 'initial_prompt')}
                   className="bg-naranja/10 text-naranja border border-naranja/10 rounded-full px-3 py-2 text-[11px] font-bold whitespace-nowrap active:bg-naranja active:text-white transition-colors"
                 >
                   {prompt}
@@ -212,7 +270,7 @@ export default function ChatScreen({
         )}
 
         {messages.map((msg, index) => (
-          <div key={index} className="flex flex-col">
+          <div key={`${msg.role}-${index}`} className="flex flex-col">
             {msg.role === 'user' ? (
               <div className="self-end max-w-[85%]">
                 <div className="bg-stone-800 text-white px-4 py-3 rounded-2xl rounded-br-md text-[14px] leading-relaxed shadow-sm">
@@ -223,15 +281,7 @@ export default function ChatScreen({
               <div className="self-start max-w-[92%]">
                 <div className="flex items-start gap-2">
                   <div className="w-7 h-7 bg-naranja/10 rounded-full flex items-center justify-center mt-0.5 shrink-0 overflow-hidden">
-                    <svg width="14" height="14" viewBox="0 0 64 64" fill="none">
-                      <path
-                        d="M32 4C16.536 4 4 16.536 4 32s12.536 28 28 28c13.44 0 24.67-9.45 27.44-22.04C58.2 38.8 56 40 53.5 40c-2.5 0-4.5-2-4.5-4.5S51 31 53.5 31c1.38 0 2.6.62 3.44 1.59C58.98 29.54 60 26.37 60 22.5 60 10.07 47.93 4 32 4z"
-                        fill="#F97316"
-                      />
-                      <ellipse cx="20" cy="18" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
-                      <ellipse cx="38" cy="14" rx="2.5" ry="2" fill="#7C2D12" opacity="0.7" />
-                      <ellipse cx="28" cy="42" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
-                    </svg>
+                    <AiaAvatar size={14} />
                   </div>
 
                   <div>
@@ -242,13 +292,19 @@ export default function ChatScreen({
                     {msg.results && msg.results.length > 0 && (
                       <div className="mt-2 flex flex-col gap-2 pl-1">
                         {msg.results.map((item) => (
-                          <PlaceCard
+                          <div
                             key={item.id}
-                            item={item}
-                            saved={savedIds.includes(item.id)}
-                            onToggleSave={onToggleSave}
-                            compact
-                          />
+                            onClick={() => handlePlaceView(item)}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <PlaceCard
+                              item={item}
+                              saved={savedIds.includes(item.id)}
+                              onToggleSave={handleToggleSave}
+                              compact
+                            />
+                          </div>
                         ))}
                       </div>
                     )}
@@ -263,7 +319,7 @@ export default function ChatScreen({
                           {lastSuggestions.map((suggestion) => (
                             <button
                               key={suggestion}
-                              onClick={() => handleSuggestion(suggestion)}
+                              onClick={() => handleSuggestion(suggestion, 'aia_suggestion')}
                               className="bg-naranja/10 text-naranja border border-naranja/10 rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap active:bg-naranja active:text-white transition-colors"
                             >
                               {suggestion}
@@ -282,15 +338,7 @@ export default function ChatScreen({
         {typing && (
           <div className="self-start flex items-center gap-2">
             <div className="w-7 h-7 bg-naranja/10 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
-              <svg width="14" height="14" viewBox="0 0 64 64" fill="none">
-                <path
-                  d="M32 4C16.536 4 4 16.536 4 32s12.536 28 28 28c13.44 0 24.67-9.45 27.44-22.04C58.2 38.8 56 40 53.5 40c-2.5 0-4.5-2-4.5-4.5S51 31 53.5 31c1.38 0 2.6.62 3.44 1.59C58.98 29.54 60 26.37 60 22.5 60 10.07 47.93 4 32 4z"
-                  fill="#F97316"
-                />
-                <ellipse cx="20" cy="18" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
-                <ellipse cx="38" cy="14" rx="2.5" ry="2" fill="#7C2D12" opacity="0.7" />
-                <ellipse cx="28" cy="42" rx="3" ry="2.5" fill="#7C2D12" opacity="0.7" />
-              </svg>
+              <AiaAvatar size={14} />
             </div>
 
             <div className="bg-white rounded-2xl rounded-bl-md shadow-sm">
@@ -305,7 +353,7 @@ export default function ChatScreen({
           {QUICK_CATS.map((cat) => (
             <button
               key={cat.label}
-              onClick={() => triggerSend(cat.msg)}
+              onClick={() => handleQuickCategory(cat)}
               className="flex items-center gap-1.5 bg-stone-100 rounded-full px-3 py-1.5 whitespace-nowrap shrink-0 active:bg-naranja active:text-white transition-colors"
             >
               <span className="text-sm">{cat.emoji}</span>
